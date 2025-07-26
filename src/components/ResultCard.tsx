@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
-import { Lightbulb, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Lightbulb, Loader2, Volume2, VolumeX } from 'lucide-react';
 
 interface ResultCardProps {
   isLoading: boolean;
@@ -9,6 +10,39 @@ interface ResultCardProps {
 }
 
 export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
+
+  const toggleSpeech = () => {
+    if (!result) return;
+
+    if (isPlaying) {
+      // Stop speech
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setSpeech(null);
+    } else {
+      // Start speech
+      const utterance = new SpeechSynthesisUtterance(result.replace(/[#*]/g, ''));
+      utterance.rate = 0.8;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+      
+      utterance.onend = () => {
+        setIsPlaying(false);
+        setSpeech(null);
+      };
+      
+      utterance.onerror = () => {
+        setIsPlaying(false);
+        setSpeech(null);
+      };
+
+      speechSynthesis.speak(utterance);
+      setSpeech(utterance);
+      setIsPlaying(true);
+    }
+  };
   if (isLoading) {
     return (
       <Card className="shadow-medium border-0">
@@ -46,13 +80,33 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
     return (
       <Card className="shadow-medium border-0">
         <CardHeader className="pb-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0 w-10 h-10 bg-gradient-secondary rounded-full flex items-center justify-center">
-              <Lightbulb className="h-6 w-6 text-secondary-foreground" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex-shrink-0 w-10 h-10 bg-gradient-secondary rounded-full flex items-center justify-center">
+                <Lightbulb className="h-6 w-6 text-secondary-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground">
+                AI Response
+              </h3>
             </div>
-            <h3 className="text-xl font-semibold text-foreground">
-              LearnFlow's Step-by-Step Response
-            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleSpeech}
+              className="flex items-center gap-2"
+            >
+              {isPlaying ? (
+                <>
+                  <VolumeX className="h-4 w-4" />
+                  Stop
+                </>
+              ) : (
+                <>
+                  <Volume2 className="h-4 w-4" />
+                  Listen
+                </>
+              )}
+            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-0">

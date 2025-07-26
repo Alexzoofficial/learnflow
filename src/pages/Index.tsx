@@ -6,7 +6,8 @@ import { TermsPage } from '@/pages/TermsPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
-import { ExternalLink, User, LogOut } from 'lucide-react';
+import { ProfileMenu } from '@/components/ProfileMenu';
+import { ExternalLink, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
@@ -105,32 +106,22 @@ const Index = () => {
             </div>
             <div className="flex items-center space-x-2">
               {user ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-primary-foreground hover:bg-white/20"
-                  onClick={handleLogout}
-                  title="Logout"
-                >
-                  <LogOut className="h-5 w-5" />
-                </Button>
+                <ProfileMenu user={user} onLogout={handleLogout} />
               ) : (
                 <Button
                   variant="ghost"
-                  size="icon"
                   className="text-primary-foreground hover:bg-white/20"
                   onClick={() => setActivePage('auth')}
-                  title="Login / Register"
                 >
-                  <User className="h-5 w-5" />
+                  Login / Register
                 </Button>
               )}
               <Button
                 variant="ghost"
                 size="icon"
                 className="text-primary-foreground hover:bg-white/20"
-                onClick={() => window.open('https://alexzo.netlify.app/try', '_blank')}
-                title="Try Alexzo App"
+                onClick={() => window.open('https://alexzo.vercel.app', '_blank')}
+                title="Visit Website"
               >
                 <ExternalLink className="h-5 w-5" />
               </Button>

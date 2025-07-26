@@ -3,13 +3,24 @@ import { SubjectTabs } from '@/components/SubjectTabs';
 import { QuestionInput } from '@/components/QuestionInput';
 import { ResultCard } from '@/components/ResultCard';
 import { FeatureCards } from '@/components/FeatureCards';
+import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface YouTubeVideo {
+  id: string;
+  title: string;
+  thumbnail: string;
+  url: string;
+  embed: string;
+}
 
 export const HomePage: React.FC = () => {
   const [activeSubject, setActiveSubject] = useState('general');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const { toast } = useToast();
 
   const handleQuestionSubmit = async (question: string, image?: File) => {
@@ -18,72 +29,57 @@ export const HomePage: React.FC = () => {
     setResult(null);
 
     try {
-      // Simulate API call for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      let requestData: any = { prompt: question };
       
-      // Mock response based on subject and question type
-      let mockResponse = '';
-      
+      // Convert image to base64 if provided
       if (image) {
-        mockResponse = `## Image Analysis Results
-
-I can see the uploaded image. Based on the visual content, here's my analysis:
-
-**Step 1: Image Recognition**
-- I've identified key elements in the image
-- The content appears to be related to ${activeSubject}
-
-**Step 2: Detailed Explanation**
-This is a demonstration of LearnFlow's image analysis capabilities. In a real implementation, this would connect to Google's Gemini Vision API to provide detailed analysis of mathematical equations, scientific diagrams, text passages, or any educational content in images.
-
-**Step 3: Learning Guidance**
-- Key concepts to understand
-- Related topics to explore
-- Practice suggestions
-
-*Note: This is a demo interface. Connect your Google Gemini API key to enable real AI responses.*`;
-      } else {
-        mockResponse = `## ${activeSubject.charAt(0).toUpperCase() + activeSubject.slice(1)} - Detailed Response
-
-**Understanding Your Question:**
-"${question}"
-
-**Step-by-Step Explanation:**
-
-**Step 1: Breaking Down the Concept**
-This is a demonstration of LearnFlow's AI-powered learning assistant. Your question about ${activeSubject} would be processed by Google's Gemini AI to provide comprehensive, educational responses.
-
-**Step 2: Key Learning Points**
-- Fundamental concepts explained clearly
-- Real-world applications and examples
-- Common misconceptions addressed
-
-**Step 3: Practice and Application**
-- Sample problems to try
-- Related topics to explore
-- Study recommendations
-
-**Step 4: Further Learning**
-Additional resources and next steps for deeper understanding.
-
-*Note: This is a demo interface. To get real AI-powered responses, you would need to integrate with Google's Gemini API using your own API key.*`;
+        const base64 = await convertImageToBase64(image);
+        requestData.image = base64;
       }
 
-      setResult(mockResponse);
+      // Call Supabase edge function
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: requestData
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get AI response');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setResult(data.text);
+      setVideos(data.videos || []);
+      
       toast({
         title: "Answer Generated!",
-        description: "LearnFlow has provided a detailed response to your question.",
+        description: "AI has provided a detailed response to your question.",
       });
     } catch (err) {
-      setError('Failed to get response. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to get response. Please try again.';
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Failed to generate response. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   return (
@@ -103,6 +99,10 @@ Additional resources and next steps for deeper understanding.
         result={result} 
         error={error} 
       />
+      
+      {videos.length > 0 && (
+        <YouTubeVideos videos={videos} />
+      )}
       
       <FeatureCards />
     </div>
