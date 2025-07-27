@@ -66,26 +66,28 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
   };
 
   return (
-    <Card className="p-6 bg-gradient-surface shadow-soft">
+    <Card className="p-4 sm:p-6 bg-gradient-surface shadow-soft">
       {/* Mode Selection */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex gap-2 sm:gap-3 mb-4">
         <Button
           variant={mode === 'text' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMode('text')}
-          className="flex-1"
+          className="flex-1 text-xs sm:text-sm"
         >
-          <FileText className="h-4 w-4 mr-2" />
-          Text Input
+          <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden xs:inline">Text Input</span>
+          <span className="xs:hidden">Text</span>
         </Button>
         <Button
           variant={mode === 'image' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMode('image')}
-          className="flex-1"
+          className="flex-1 text-xs sm:text-sm"
         >
-          <Image className="h-4 w-4 mr-2" />
-          Image Upload
+          <Image className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden xs:inline">Image Upload</span>
+          <span className="xs:hidden">Image</span>
         </Button>
       </div>
 
@@ -96,8 +98,8 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask LearnFlow anything... e.g., 'Explain the theory of relativity step-by-step', 'Show the steps to solve 2x + 5 = 15'"
-            className="min-h-[120px] resize-none text-base border-2 focus:border-primary"
+            placeholder="Ask LearnFlow anything... e.g., 'Explain relativity', 'Solve 2x + 5 = 15'"
+            className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base border-2 focus:border-primary"
             disabled={isLoading}
           />
         </div>
@@ -120,11 +122,11 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
             >
-              <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <div className="space-y-2">
-                <p className="text-lg font-semibold">Drop an image here or click to browse</p>
-                <p className="text-sm text-muted-foreground">
-                  Supports: JPG, PNG, GIF, WebP (Max 4MB)
+              <Upload className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 sm:mb-4 text-muted-foreground" />
+              <div className="space-y-1 sm:space-y-2">
+                <p className="text-sm sm:text-lg font-semibold">Drop image or click to browse</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  JPG, PNG, GIF, WebP (Max 4MB)
                 </p>
               </div>
               <input
@@ -166,7 +168,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
       {/* Submit Button */}
       <Button
         variant="solve"
-        className="w-full mt-6"
+        className="w-full mt-4 sm:mt-6 h-12 text-base font-semibold"
         onClick={handleSubmit}
         disabled={isLoading || (mode === 'text' && !question.trim()) || (mode === 'image' && !selectedImage)}
       >
