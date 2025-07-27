@@ -13,6 +13,41 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
   const [isPlaying, setIsPlaying] = useState(false);
   const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
 
+  // Auto-play text-to-speech when result changes
+  React.useEffect(() => {
+    if (result && !isPlaying) {
+      // Auto-start speech after a short delay
+      const timer = setTimeout(() => {
+        startSpeech();
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [result]);
+
+  const startSpeech = () => {
+    if (!result || isPlaying) return;
+    
+    const utterance = new SpeechSynthesisUtterance(result.replace(/[#*]/g, ''));
+    utterance.rate = 0.9;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+    
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setSpeech(null);
+    };
+    
+    utterance.onerror = () => {
+      setIsPlaying(false);
+      setSpeech(null);
+    };
+
+    speechSynthesis.speak(utterance);
+    setSpeech(utterance);
+    setIsPlaying(true);
+  };
+
   const toggleSpeech = () => {
     if (!result) return;
 
@@ -22,25 +57,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
       setIsPlaying(false);
       setSpeech(null);
     } else {
-      // Start speech
-      const utterance = new SpeechSynthesisUtterance(result.replace(/[#*]/g, ''));
-      utterance.rate = 0.8;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-      
-      utterance.onend = () => {
-        setIsPlaying(false);
-        setSpeech(null);
-      };
-      
-      utterance.onerror = () => {
-        setIsPlaying(false);
-        setSpeech(null);
-      };
-
-      speechSynthesis.speak(utterance);
-      setSpeech(utterance);
-      setIsPlaying(true);
+      startSpeech();
     }
   };
   if (isLoading) {

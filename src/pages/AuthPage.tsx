@@ -196,14 +196,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl font-bold text-primary">
-            {mode === 'login' ? 'Login to LearnFlow' : 
-             mode === 'signup' ? 'Create Account' : 
+    <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
+      <Card className="w-full max-w-md shadow-glow border-0 bg-white/95 backdrop-blur-sm">
+        <CardHeader className="text-center pb-8">
+          <div className="mx-auto w-16 h-16 bg-gradient-secondary rounded-full flex items-center justify-center mb-4">
+            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
+              <div className="w-4 h-4 bg-gradient-primary rounded-full"></div>
+            </div>
+          </div>
+          <CardTitle className="text-2xl font-bold text-foreground">
+            {mode === 'login' ? 'Welcome Back' : 
+             mode === 'signup' ? 'Join LearnFlow' : 
              'Reset Password'}
           </CardTitle>
+          <p className="text-muted-foreground mt-2">
+            {mode === 'login' ? 'Continue your learning journey' : 
+             mode === 'signup' ? 'Start your educational adventure' : 
+             'Get back to learning'}
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={
@@ -251,9 +261,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-gradient-primary hover:opacity-90 text-white font-semibold py-3 text-lg" disabled={loading}>
               {loading ? 'Please wait...' : 
-               mode === 'login' ? 'Login' : 
+               mode === 'login' ? 'Sign In' : 
                mode === 'signup' ? 'Create Account' : 
                'Send Reset Link'}
             </Button>
