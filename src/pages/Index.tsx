@@ -101,7 +101,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background relative overflow-x-hidden">
       <Sidebar 
         isOpen={sidebarOpen}
         onToggle={toggleSidebar}
@@ -109,26 +109,51 @@ const Index = () => {
         onPageChange={setActivePage}
       />
       
-      <div className="flex-1 lg:ml-0">
-        {/* Header */}
-        <header className="bg-gradient-primary text-primary-foreground shadow-glow sticky top-0 z-30">
-          <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4 lg:ml-0 ml-10">
-              <h1 className="text-lg sm:text-xl lg:text-2xl font-bold">LearnFlow</h1>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      <div className="w-full min-h-screen flex flex-col">
+        {/* Mobile-First Header */}
+        <header className="bg-gradient-primary text-primary-foreground shadow-glow sticky top-0 z-30 w-full">
+          <div className="w-full px-4 py-3 flex items-center justify-between">
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden text-primary-foreground hover:bg-white/20 p-2"
+              onClick={toggleSidebar}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </Button>
+            
+            {/* App Title */}
+            <div className="flex-1 lg:flex-none lg:ml-4">
+              <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-center lg:text-left">
+                LearnFlow
+              </h1>
             </div>
-            <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4">
+            
+            {/* Header Actions */}
+            <div className="flex items-center space-x-2">
               {user ? (
                 <ProfileMenu user={user} onLogout={handleLogout} />
               ) : (
                 <Button
                   variant="ghost"
-                  className="text-primary-foreground hover:bg-white/20 flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-full border border-white/20 text-xs sm:text-sm"
+                  className="text-primary-foreground hover:bg-white/20 flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-full border border-white/20 text-xs sm:text-sm"
                   onClick={() => setActivePage('auth')}
                 >
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white/20 rounded-full flex items-center justify-center">
-                    <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white/20 rounded-full flex items-center justify-center">
+                    <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   </div>
-                  <span className="hidden xs:inline">Sign In</span>
+                  <span className="hidden sm:inline">Sign In</span>
                 </Button>
               )}
               <Button
@@ -138,15 +163,19 @@ const Index = () => {
                 onClick={() => window.open('https://alexzo.vercel.app', '_blank')}
                 title="Visit Website"
               >
-                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4 lg:h-5 lg:w-5" />
+                <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             </div>
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="max-w-4xl mx-auto p-3 sm:p-4 lg:p-6">
-          {renderPage()}
+        {/* Main Content Area - Mobile Optimized */}
+        <main className="flex-1 w-full">
+          <div className="w-full max-w-7xl mx-auto px-3 py-4 sm:px-4 sm:py-6 lg:px-6 lg:py-8">
+            <div className="w-full max-w-4xl mx-auto">
+              {renderPage()}
+            </div>
+          </div>
         </main>
       </div>
     </div>

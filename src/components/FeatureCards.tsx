@@ -31,25 +31,27 @@ const features = [
 
 export const FeatureCards: React.FC = () => {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mt-6 sm:mt-8">
-      {features.map((feature, index) => {
-        const Icon = feature.icon;
-        return (
-          <Card key={index} className="group hover:shadow-medium transition-all duration-300 hover:scale-105 border-0 shadow-soft">
-            <CardContent className="p-3 sm:p-4 lg:p-6 text-center">
-              <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 lg:w-16 lg:h-16 rounded-full bg-gradient-to-r ${feature.gradient} mb-2 sm:mb-3 lg:mb-4 text-white group-hover:scale-110 transition-transform duration-300`}>
-                <Icon className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
-              </div>
-              <h3 className="font-semibold text-sm sm:text-base lg:text-lg mb-1 sm:mb-2 text-foreground">
-                {feature.title}
-              </h3>
-              <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
-                {feature.description}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="w-full">
+      <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {features.map((feature, index) => {
+          const Icon = feature.icon;
+          return (
+            <Card key={index} className="group hover:shadow-medium transition-all duration-300 hover:scale-[1.02] border-0 shadow-soft w-full">
+              <CardContent className="p-4 sm:p-5 text-center">
+                <div className={`inline-flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-r ${feature.gradient} mb-3 text-white group-hover:scale-110 transition-transform duration-300`}>
+                  <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                </div>
+                <h3 className="font-semibold text-sm sm:text-base mb-2 text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed">
+                  {feature.description}
+                </p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };

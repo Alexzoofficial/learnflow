@@ -129,4 +129,32 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Mobile-first responsive utilities */
+  .mobile-padding {
+    @apply px-3 sm:px-4 lg:px-6;
+  }
+  
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-grid {
+    @apply grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4;
+  }
+  
+  /* Touch-friendly buttons for mobile */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Safe area for iOS */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }

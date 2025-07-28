@@ -83,28 +83,43 @@ export const HomePage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <SubjectTabs 
-        activeSubject={activeSubject} 
-        onSubjectChange={setActiveSubject} 
-      />
+    <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Subject Tabs - Mobile Optimized */}
+      <div className="w-full">
+        <SubjectTabs 
+          activeSubject={activeSubject} 
+          onSubjectChange={setActiveSubject} 
+        />
+      </div>
       
-      <QuestionInput 
-        onSubmit={handleQuestionSubmit} 
-        isLoading={isLoading} 
-      />
+      {/* Question Input - Full Width Mobile */}
+      <div className="w-full">
+        <QuestionInput 
+          onSubmit={handleQuestionSubmit} 
+          isLoading={isLoading} 
+        />
+      </div>
       
-      <ResultCard 
-        isLoading={isLoading} 
-        result={result} 
-        error={error} 
-      />
+      {/* Result Card - Mobile Optimized */}
+      <div className="w-full">
+        <ResultCard 
+          isLoading={isLoading} 
+          result={result} 
+          error={error} 
+        />
+      </div>
       
+      {/* YouTube Videos - Mobile Grid */}
       {videos.length > 0 && (
-        <YouTubeVideos videos={videos} />
+        <div className="w-full">
+          <YouTubeVideos videos={videos} />
+        </div>
       )}
       
-      <FeatureCards />
+      {/* Feature Cards - Mobile Responsive Grid */}
+      <div className="w-full">
+        <FeatureCards />
+      </div>
     </div>
   );
 };
