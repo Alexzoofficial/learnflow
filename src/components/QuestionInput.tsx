@@ -2,8 +2,9 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { FileText, Image, Upload, X } from 'lucide-react';
+import { FileText, Image, Upload, X, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { VoiceRecorder } from './VoiceRecorder';
 
 interface QuestionInputProps {
   onSubmit: (question: string, image?: File) => void;
@@ -11,7 +12,7 @@ interface QuestionInputProps {
 }
 
 export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoading }) => {
-  const [mode, setMode] = useState<'text' | 'image'>('text');
+  const [mode, setMode] = useState<'text' | 'image' | 'voice'>('text');
   const [question, setQuestion] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -68,26 +69,33 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
   return (
     <Card className="p-4 sm:p-6 bg-gradient-surface shadow-soft">
       {/* Mode Selection */}
-      <div className="flex gap-2 sm:gap-3 mb-4">
+      <div className="flex gap-1 sm:gap-2 mb-4">
         <Button
           variant={mode === 'text' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMode('text')}
-          className="flex-1 text-xs sm:text-sm"
+          className="flex-1 text-xs sm:text-sm px-2 sm:px-3"
         >
           <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          <span className="hidden xs:inline">Text Input</span>
-          <span className="xs:hidden">Text</span>
+          <span className="hidden sm:inline">Text</span>
+        </Button>
+        <Button
+          variant={mode === 'voice' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setMode('voice')}
+          className="flex-1 text-xs sm:text-sm px-2 sm:px-3"
+        >
+          <Mic className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+          <span className="hidden sm:inline">Voice</span>
         </Button>
         <Button
           variant={mode === 'image' ? 'default' : 'outline'}
           size="sm"
           onClick={() => setMode('image')}
-          className="flex-1 text-xs sm:text-sm"
+          className="flex-1 text-xs sm:text-sm px-2 sm:px-3"
         >
           <Image className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          <span className="hidden xs:inline">Image Upload</span>
-          <span className="xs:hidden">Image</span>
+          <span className="hidden sm:inline">Image</span>
         </Button>
       </div>
 
@@ -105,13 +113,34 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
         </div>
       )}
 
+      {/* Voice Mode */}
+      {mode === 'voice' && (
+        <div className="space-y-4">
+          <div className="border-2 border-dashed rounded-xl p-6 sm:p-8 text-center">
+            <Mic className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-4 text-muted-foreground" />
+            <div className="space-y-2">
+              <p className="text-sm sm:text-lg font-semibold">Voice Input</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Click the microphone button below to start recording
+              </p>
+            </div>
+            <div className="mt-6">
+              <VoiceRecorder 
+                onSubmit={(text) => onSubmit(text)} 
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Image Mode */}
       {mode === 'image' && (
         <div className="space-y-4">
           {!selectedImage ? (
             <div
               className={cn(
-                "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors",
+                "border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors",
                 isDragOver ? "border-secondary bg-secondary/10" : "border-border hover:border-secondary/50",
               )}
               onClick={() => fileInputRef.current?.click()}
@@ -165,15 +194,17 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
         </div>
       )}
 
-      {/* Submit Button */}
-      <Button
-        variant="solve"
-        className="w-full mt-4 sm:mt-6 h-12 text-base font-semibold"
-        onClick={handleSubmit}
-        disabled={isLoading || (mode === 'text' && !question.trim()) || (mode === 'image' && !selectedImage)}
-      >
-        {isLoading ? 'Processing...' : 'Get Answer'}
-      </Button>
+      {/* Submit Button - Hide for voice mode since VoiceRecorder handles submission */}
+      {mode !== 'voice' && (
+        <Button
+          variant="solve"
+          className="w-full mt-4 sm:mt-6 h-12 text-base font-semibold"
+          onClick={handleSubmit}
+          disabled={isLoading || (mode === 'text' && !question.trim()) || (mode === 'image' && !selectedImage)}
+        >
+          {isLoading ? 'Processing...' : 'Get Answer'}
+        </Button>
+      )}
     </Card>
   );
 };

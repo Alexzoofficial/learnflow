@@ -25,33 +25,38 @@ export const YouTubeVideos: React.FC<YouTubeVideosProps> = ({ videos }) => {
   return (
     <>
       <Card className="shadow-medium border-0">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-foreground">
-            <Play className="h-5 w-5 text-red-500" />
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg">
+            <Play className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />
             Related YouTube Videos
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <CardContent className="px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {videos.map((video) => (
               <div
                 key={video.id}
-                className="group cursor-pointer rounded-lg overflow-hidden border hover:shadow-lg transition-shadow"
+                className="group cursor-pointer rounded-lg overflow-hidden border hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
                 onClick={() => setSelectedVideo(video)}
               >
                 <div className="relative">
                   <img
                     src={video.thumbnail}
                     alt={video.title}
-                    className="w-full h-32 sm:h-40 object-cover"
-                    loading="eager"
+                    className="w-full h-28 sm:h-36 lg:h-40 object-cover"
+                    loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="h-8 w-8 text-white" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-red-600 rounded-full p-2 sm:p-3">
+                      <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white fill-white" />
+                    </div>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+                    YouTube
                   </div>
                 </div>
-                <div className="p-3">
-                  <h4 className="text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors">
+                <div className="p-2 sm:p-3">
+                  <h4 className="text-xs sm:text-sm font-medium line-clamp-2 group-hover:text-primary transition-colors leading-tight">
                     {video.title}
                   </h4>
                 </div>
