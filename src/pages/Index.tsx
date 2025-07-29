@@ -135,7 +135,7 @@ const Index = () => {
             
             {/* App Title */}
             <div className="flex-1 lg:flex-none lg:ml-4">
-              <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-center lg:text-left">
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-center lg:text-left tracking-tight">
                 LearnFlow
               </h1>
             </div>

@@ -72,9 +72,9 @@ export const PrivacyPage: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">6. Children's Privacy</h2>
+            <h2 className="text-xl font-semibold mb-3">6. Age-Appropriate Content</h2>
             <p>
-              Our Service is not for children under 13 (or higher applicable age) without parental consent. We don't knowingly collect personal data from children under 13. If you're a parent/guardian and aware your child provided Personal Data, contact us. If we learn we collected Personal Data from children without verified parental consent, we'll remove it.
+              LearnFlow is designed to be educational and suitable for all ages. We strive to provide content that is appropriate for learners of all age groups, from children to adults. While we don't directly collect personal data from children, we recommend parental guidance for users under 13. If you're a parent/guardian and have concerns about your child's use of our service, please contact us.
             </p>
           </section>
 

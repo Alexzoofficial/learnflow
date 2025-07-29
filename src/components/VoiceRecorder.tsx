@@ -69,17 +69,39 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
     try {
       // Convert blob to base64
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64Audio = reader.result as string;
-        const base64Data = base64Audio.split(',')[1];
-        
-        // For now, simulate speech-to-text (replace with actual API call)
-        setTimeout(() => {
-          onSubmit("Voice input detected - please type your question for now");
+      reader.onloadend = async () => {
+        try {
+          const base64Audio = reader.result as string;
+          const base64Data = base64Audio.split(',')[1];
+          
+          // Call speech-to-text API
+          const response = await fetch('/functions/v1/voice-to-text', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              audio: base64Data
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to process audio');
+          }
+
+          const result = await response.json();
+          
+          if (result.text && result.text.trim()) {
+            onSubmit(result.text.trim());
+          } else {
+            onSubmit("Voice input was unclear, please try again");
+          }
+        } catch (error) {
+          console.error('Speech-to-text error:', error);
+          onSubmit("Voice processing failed, please try typing your question");
+        } finally {
           setIsProcessing(false);
-        }, 1000);
-        
-        /* TODO: Implement actual speech-to-text API call */
+        }
       };
       reader.readAsDataURL(audioBlob);
     } catch (error) {
