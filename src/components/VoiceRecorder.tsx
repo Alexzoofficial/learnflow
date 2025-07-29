@@ -75,10 +75,11 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
           const base64Data = base64Audio.split(',')[1];
           
           // Call speech-to-text API
-          const response = await fetch('/functions/v1/voice-to-text', {
+          const response = await fetch('https://xciiktipygeiikgotwql.supabase.co/functions/v1/voice-to-text', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaWlrdGlweWdlaWlrZ290d3FsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0NzM3NzEsImV4cCI6MjA2OTA0OTc3MX0.mSBw0pvRnhYDSHcQ0SvkZQsgys2Fe25Xfib10UgotTI'}`,
             },
             body: JSON.stringify({
               audio: base64Data
