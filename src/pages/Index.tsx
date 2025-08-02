@@ -8,6 +8,8 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
+import { NotificationCenter } from '@/components/NotificationCenter';
+import AdminPage from '@/pages/AdminPage';
 import { ExternalLink, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -93,6 +95,8 @@ const Index = () => {
         return <DisclaimerPage />;
       case 'auth':
         return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+      case 'admin':
+        return <AdminPage />;
       case 'password-reset':
         return <PasswordResetPage onPasswordReset={handlePasswordReset} />;
       default:
@@ -142,6 +146,7 @@ const Index = () => {
             
             {/* Header Actions */}
             <div className="flex items-center space-x-2">
+              {user && <NotificationCenter />}
               {user ? (
                 <ProfileMenu user={user} onLogout={handleLogout} />
               ) : (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Menu, BookOpen, FileText, Info, Shield, Eye, AlertTriangle } from 'lucide-react';
+import { X, Menu, BookOpen, FileText, Info, Shield, Eye, AlertTriangle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +13,7 @@ interface SidebarProps {
 const navigationItems = [
   { id: 'home', label: 'Home (Q&A)', icon: BookOpen },
   { id: 'about', label: 'About LearnFlow', icon: Info },
+  { id: 'admin', label: 'Admin Panel', icon: Settings },
   { id: 'terms', label: 'Terms & Conditions', icon: FileText },
   { id: 'privacy', label: 'Privacy Policy', icon: Shield },
   { id: 'disclaimer', label: 'Disclaimer', icon: AlertTriangle },

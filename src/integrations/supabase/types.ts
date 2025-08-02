@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      notification_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          notification_id: string | null
+          read_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_id?: string | null
+          read_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "notifications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_sent: boolean
+          link_text: string | null
+          link_url: string | null
+          scheduled_at: string | null
+          sent_at: string | null
+          target_audience: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_sent?: boolean
+          link_text?: string | null
+          link_url?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_audience?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_sent?: boolean
+          link_text?: string | null
+          link_url?: string | null
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_audience?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
