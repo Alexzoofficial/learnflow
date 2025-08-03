@@ -9,12 +9,13 @@ import { AuthPage } from '@/pages/AuthPage';
 import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
-import AdminPage from '@/pages/AdminPage';
+
 import { ExternalLink, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -22,6 +23,7 @@ const Index = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
+  const { track, trackPageView } = useAnalytics();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -47,6 +49,11 @@ const Index = () => {
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+
+  // Track page changes
+  useEffect(() => {
+    trackPageView(activePage);
+  }, [activePage, trackPageView]);
 
   const handleAuthSuccess = () => {
     setActivePage('home');
@@ -95,8 +102,6 @@ const Index = () => {
         return <DisclaimerPage />;
       case 'auth':
         return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-      case 'admin':
-        return <AdminPage />;
       case 'password-reset':
         return <PasswordResetPage onPasswordReset={handlePasswordReset} />;
       default:

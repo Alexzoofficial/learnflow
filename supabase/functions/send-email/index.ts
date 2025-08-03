@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
     }
 
     const { error } = await resend.emails.send({
-      from: 'LearnFlow <noreply@resend.dev>',
+      from: 'LearnFlow Support <onboarding@resend.dev>',
       to: [user.email],
       subject,
       html,
