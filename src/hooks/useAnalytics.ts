@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { auth, analytics } from '@/lib/firebase';
+import { logEvent } from 'firebase/analytics';
 
 interface AnalyticsEvent {
   event_name: string;
@@ -28,7 +29,17 @@ export const useAnalytics = () => {
         timestamp: new Date().toISOString()
       };
 
-      // Log to console for now (you can send to analytics service later)
+      // Send to Firebase Analytics
+      const analyticsInstance = await analytics;
+      if (analyticsInstance) {
+        logEvent(analyticsInstance, eventName, {
+          ...properties,
+          session_id: sessionId,
+          user_id: user?.uid
+        });
+      }
+
+      // Log to console for debugging
       console.log('📊 Analytics Event:', event);
       
       // Store in localStorage for basic tracking
