@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { auth, db } from "@/lib/firebase";
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy, serverTimestamp } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,13 +41,16 @@ export const AdminNotificationPanel = () => {
 
   const fetchNotifications = async () => {
     try {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setNotifications(data || []);
+      const q = query(collection(db, 'notifications'), orderBy('created_at', 'desc'));
+      const querySnapshot = await getDocs(q);
+      
+      const notificationData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        created_at: doc.data().created_at?.toDate?.()?.toISOString() || new Date().toISOString()
+      })) as Notification[];
+      
+      setNotifications(notificationData);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to fetch notifications');
@@ -62,8 +66,8 @@ export const AdminNotificationPanel = () => {
     }
 
     try {
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) {
+      const user = auth.currentUser;
+      if (!user) {
         toast.error('You must be logged in');
         return;
       }
@@ -74,15 +78,14 @@ export const AdminNotificationPanel = () => {
         image_url: formData.image_url || null,
         link_url: formData.link_url || null,
         link_text: formData.link_text || null,
-        scheduled_at: formData.scheduled_at || null,
-        created_by: user.user.id
+        scheduled_at: formData.scheduled_at ? new Date(formData.scheduled_at) : null,
+        created_by: user.uid,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp(),
+        is_sent: false
       };
 
-      const { error } = await supabase
-        .from('notifications')
-        .insert([notificationData]);
-
-      if (error) throw error;
+      await addDoc(collection(db, 'notifications'), notificationData);
 
       toast.success('Notification created successfully');
       setFormData({
@@ -103,15 +106,12 @@ export const AdminNotificationPanel = () => {
 
   const sendNotification = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .update({ 
-          is_sent: true, 
-          sent_at: new Date().toISOString() 
-        })
-        .eq('id', id);
-
-      if (error) throw error;
+      const notificationRef = doc(db, 'notifications', id);
+      await updateDoc(notificationRef, { 
+        is_sent: true, 
+        sent_at: serverTimestamp(),
+        updated_at: serverTimestamp()
+      });
 
       toast.success('Notification sent successfully');
       fetchNotifications();
@@ -123,12 +123,7 @@ export const AdminNotificationPanel = () => {
 
   const deleteNotification = async (id: string) => {
     try {
-      const { error } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteDoc(doc(db, 'notifications', id));
 
       toast.success('Notification deleted');
       fetchNotifications();

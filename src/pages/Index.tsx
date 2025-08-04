@@ -10,42 +10,29 @@ import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
-import { ExternalLink, User } from 'lucide-react';
+import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState('home');
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<any>(null);
   const { toast } = useToast();
   const { track, trackPageView } = useAnalytics();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Handle password recovery
-        if (event === 'PASSWORD_RECOVERY') {
-          setActivePage('password-reset');
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setSession(user ? { user } : null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -65,11 +52,12 @@ const Index = () => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const { logout } = await import("@/integrations/firebase/auth");
+      const { error } = await logout();
       if (error) {
         toast({
           title: "Logout Failed",
-          description: error.message,
+          description: error,
           variant: "destructive",
         });
       } else {
@@ -161,7 +149,7 @@ const Index = () => {
                   onClick={() => setActivePage('auth')}
                 >
                   <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white/20 rounded-full flex items-center justify-center">
-                    <User className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    <UserIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   </div>
                   <span className="hidden sm:inline">Sign In</span>
                 </Button>
