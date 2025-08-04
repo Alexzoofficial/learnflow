@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { User } from 'firebase/auth';
+import { getProfile, updateProfile, createProfile } from '@/integrations/firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -47,13 +47,9 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
+      const { data, error } = await getProfile(user.uid);
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -67,19 +63,20 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
     }
   };
 
-  const updateProfile = async () => {
+  const updateProfileData = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          user_id: user.id,
+      let result;
+      
+      if (profile) {
+        result = await updateProfile(profile.id, {
           display_name: displayName.trim() || user.email
-        }, {
-          onConflict: 'user_id'
         });
+      } else {
+        result = await createProfile(user.uid, displayName.trim() || user.email || 'User');
+      }
 
-      if (error) throw error;
+      if (result.error) throw new Error(result.error);
 
       await fetchProfile();
       setIsDialogOpen(false);
@@ -158,7 +155,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={updateProfile}
+                  onClick={updateProfileData}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save Changes'}

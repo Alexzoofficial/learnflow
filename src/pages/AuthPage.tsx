@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/lib/firebase';
+import { signIn, signUp, resetPassword } from '@/integrations/firebase/auth';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { User, Session } from '@supabase/supabase-js';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -18,36 +19,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer any additional operations
-          setTimeout(() => {
-            onAuthSuccess();
-          }, 0);
-        }
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
       
-      if (session?.user) {
-        onAuthSuccess();
+      if (user) {
+        // Defer any additional operations
+        setTimeout(() => {
+          onAuthSuccess();
+        }, 0);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [onAuthSuccess]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -55,13 +42,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const { user, error } = await signIn(email, password);
 
       if (error) {
-        if (error.message.includes('Invalid login credentials')) {
+        if (error.includes('invalid-credential') || error.includes('user-not-found') || error.includes('wrong-password')) {
           toast({
             title: "Login Failed",
             description: "Invalid email or password. Please check your credentials.",
@@ -70,7 +54,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         } else {
           toast({
             title: "Login Failed",
-            description: error.message,
+            description: error,
             variant: "destructive",
           });
         }
@@ -107,18 +91,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
+      const { user, error } = await signUp(email, password, email);
 
       if (error) {
-        if (error.message.includes('User already registered')) {
+        if (error.includes('email-already-in-use')) {
           toast({
             title: "Account Exists",
             description: "An account with this email already exists. Please try logging in.",
@@ -127,16 +103,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
         } else {
           toast({
             title: "Signup Failed",
-            description: error.message,
+            description: error,
             variant: "destructive",
           });
         }
       } else {
         toast({
           title: "Account Created Successfully!",
-          description: "You can now login with your credentials.",
+          description: "You are now logged in!",
         });
-        setMode('login');
       }
     } catch (error) {
       toast({
@@ -154,16 +129,12 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectUrl
-      });
+      const { error } = await resetPassword(email);
 
       if (error) {
         toast({
           title: "Reset Failed",
-          description: error.message,
+          description: error,
           variant: "destructive",
         });
       } else {
