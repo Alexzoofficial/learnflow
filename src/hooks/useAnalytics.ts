@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AnalyticsEvent {
   event_name: string;
@@ -13,11 +13,11 @@ export const useAnalytics = () => {
 
   const track = async (eventName: string, properties?: Record<string, any>) => {
     try {
-      const user = auth.currentUser;
+      const { data: { user } } = await supabase.auth.getUser();
       
       const event: AnalyticsEvent = {
         event_name: eventName,
-        user_id: user?.uid,
+        user_id: user?.id,
         properties: {
           ...properties,
           session_id: sessionId,

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { auth } from "@/lib/firebase";
-import { getNotifications, markNotificationAsRead, subscribeToNotifications } from "@/integrations/firebase/firestore";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,8 +13,8 @@ interface Notification {
   image_url?: string;
   link_url?: string;
   link_text?: string;
-  created_at: string | Date;
-  read_at?: string | Date;
+  created_at: string;
+  read_at?: string;
 }
 
 export const NotificationCenter = () => {
@@ -24,32 +23,67 @@ export const NotificationCenter = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-    
-    fetchNotificationData();
+    fetchNotifications();
     
     // Subscribe to real-time updates
-    const unsubscribe = subscribeToNotifications(auth.currentUser.uid, (notifications) => {
-      setNotifications(notifications);
-      setUnreadCount(notifications.filter(n => !n.read_at).length);
-    });
+    const channel = supabase
+      .channel('notification-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notification_recipients'
+        },
+        () => {
+          fetchNotifications();
+        }
+      )
+      .subscribe();
 
-    return () => unsubscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  const fetchNotificationData = async () => {
+  const fetchNotifications = async () => {
     try {
-      if (!auth.currentUser) return;
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
 
-      const { data, error } = await getNotifications(auth.currentUser.uid);
+      const { data, error } = await supabase
+        .from('notification_recipients')
+        .select(`
+          id,
+          read_at,
+          notifications (
+            id,
+            title,
+            description,
+            image_url,
+            link_url,
+            link_text,
+            created_at
+          )
+        `)
+        .eq('user_id', user.user.id)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching notifications:', error);
-        return;
-      }
+      if (error) throw error;
 
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.read_at).length);
+      const formattedNotifications = data?.map(item => ({
+        id: item.notifications.id,
+        title: item.notifications.title,
+        description: item.notifications.description,
+        image_url: item.notifications.image_url,
+        link_url: item.notifications.link_url,
+        link_text: item.notifications.link_text,
+        created_at: item.notifications.created_at,
+        read_at: item.read_at
+      })) || [];
+
+      setNotifications(formattedNotifications);
+      setUnreadCount(formattedNotifications.filter(n => !n.read_at).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
@@ -57,14 +91,16 @@ export const NotificationCenter = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      if (!auth.currentUser) return;
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) return;
 
-      const { error } = await markNotificationAsRead(auth.currentUser.uid, notificationId);
+      const { error } = await supabase
+        .from('notification_recipients')
+        .update({ read_at: new Date().toISOString() })
+        .eq('notification_id', notificationId)
+        .eq('user_id', user.user.id);
 
-      if (error) {
-        console.error('Error marking notification as read:', error);
-        return;
-      }
+      if (error) throw error;
 
       setNotifications(prev => 
         prev.map(n => 

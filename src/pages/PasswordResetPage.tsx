@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
-import { updatePassword } from 'firebase/auth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,23 +40,24 @@ export const PasswordResetPage: React.FC<PasswordResetPageProps> = ({ onPassword
     setLoading(true);
 
     try {
-      if (!auth.currentUser) {
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
         toast({
-          title: "Authentication Error",
-          description: "You must be logged in to reset your password.",
+          title: "Password Reset Failed",
+          description: error.message,
           variant: "destructive",
         });
-        return;
+      } else {
+        toast({
+          title: "Password Updated!",
+          description: "Your password has been updated successfully. You are now logged in.",
+        });
+        onPasswordReset();
       }
-
-      await updatePassword(auth.currentUser, password);
-      
-      toast({
-        title: "Password Updated!",
-        description: "Your password has been updated successfully.",
-      });
-      onPasswordReset();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",

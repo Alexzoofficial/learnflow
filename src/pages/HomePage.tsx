@@ -5,7 +5,7 @@ import { ResultCard } from '@/components/ResultCard';
 import { FeatureCards } from '@/components/FeatureCards';
 import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
-import { callAIChat } from '@/integrations/firebase/functions';
+import { supabase } from '@/integrations/supabase/client';
 
 interface YouTubeVideo {
   id: string;
@@ -37,8 +37,18 @@ export const HomePage: React.FC = () => {
         requestData.image = base64;
       }
 
-      // Call Firebase function
-      const data = await callAIChat(question, requestData.image);
+      // Call Supabase edge function
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: requestData
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get AI response');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       setResult(data.text);
       setVideos(data.videos || []);

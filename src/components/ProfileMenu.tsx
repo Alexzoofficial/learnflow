@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { User } from 'firebase/auth';
-import { getProfile, updateProfile, createProfile } from '@/integrations/firebase/firestore';
+import { User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
@@ -47,9 +47,13 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await getProfile(user.uid);
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-      if (error) {
+      if (error && error.code !== 'PGRST116') {
         console.error('Error fetching profile:', error);
         return;
       }
@@ -63,20 +67,19 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
     }
   };
 
-  const updateProfileData = async () => {
+  const updateProfile = async () => {
     setLoading(true);
     try {
-      let result;
-      
-      if (profile) {
-        result = await updateProfile(profile.id, {
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          user_id: user.id,
           display_name: displayName.trim() || user.email
+        }, {
+          onConflict: 'user_id'
         });
-      } else {
-        result = await createProfile(user.uid, displayName.trim() || user.email || 'User');
-      }
 
-      if (result.error) throw new Error(result.error);
+      if (error) throw error;
 
       await fetchProfile();
       setIsDialogOpen(false);
@@ -155,7 +158,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
                   Cancel
                 </Button>
                 <Button 
-                  onClick={updateProfileData}
+                  onClick={updateProfile}
                   disabled={loading}
                 >
                   {loading ? 'Saving...' : 'Save Changes'}
