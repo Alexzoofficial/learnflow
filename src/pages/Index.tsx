@@ -6,7 +6,6 @@ import { TermsPage } from '@/pages/TermsPage';
 import { PrivacyPage } from '@/pages/PrivacyPage';
 import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
-import { PasswordResetPage } from '@/pages/PasswordResetPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
 
@@ -46,9 +45,6 @@ const Index = () => {
     setActivePage('home');
   };
 
-  const handlePasswordReset = () => {
-    setActivePage('home');
-  };
 
   const handleLogout = async () => {
     try {
@@ -90,8 +86,6 @@ const Index = () => {
         return <DisclaimerPage />;
       case 'auth':
         return <AuthPage onAuthSuccess={handleAuthSuccess} />;
-      case 'password-reset':
-        return <PasswordResetPage onPasswordReset={handlePasswordReset} />;
       default:
         return <HomePage />;
     }
