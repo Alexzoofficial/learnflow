@@ -73,6 +73,7 @@ const Index = () => {
   };
 
   const renderPage = () => {
+    // Always show content, auth is optional
     switch (activePage) {
       case 'home':
         return <HomePage />;
