@@ -14,15 +14,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     
-    // Mock authentication for now
-    setTimeout(() => {
+    try {
+      // For now, just call onAuthSuccess to actually log in
+      onAuthSuccess();
       toast({
         title: "Success",
-        description: "Authentication will be implemented with Supabase!",
+        description: "Successfully logged in!",
       });
-      setLoading(false);
-      onAuthSuccess();
-    }, 1000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Login failed. Please try again.",
+        variant: "destructive",
+      });
+    }
+    setLoading(false);
   };
 
   return (

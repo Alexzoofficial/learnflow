@@ -59,37 +59,37 @@ serve(async (req) => {
 const generateEducationalResponse = (prompt: string): string => {
   const lowerPrompt = prompt.toLowerCase();
   
-  // Math problems - concise responses
+  // Math problems - direct answers only
   if (lowerPrompt.includes('2 + 2') || lowerPrompt.includes('2+2')) {
-    return `**Answer: 4**\n\n**Explanation:**\nAddition combines quantities. 2 + 2 means combining two groups of 2, resulting in 4.\n\n**Key Concept:** Basic arithmetic operation fundamental to mathematics.`;
+    return `**Answer: 4**`;
   }
   
   if (lowerPrompt.includes('math') || lowerPrompt.includes('addition') || lowerPrompt.includes('subtraction') || lowerPrompt.includes('multiplication') || lowerPrompt.includes('division')) {
-    return `**Mathematical Concept: ${prompt}**\n\n**Core Principles:**\n- Mathematics is the study of numbers, patterns, and relationships\n- Basic operations: addition, subtraction, multiplication, division\n- Foundation for advanced problem-solving\n\n**Application:** Essential for logical thinking and real-world calculations.`;
+    return `**${prompt}**\n\nBasic mathematical operations: addition (+), subtraction (-), multiplication (×), division (÷).`;
   }
   
-  // Science topics - focused responses
+  // Science topics - concise responses
   if (lowerPrompt.includes('science') || lowerPrompt.includes('physics') || lowerPrompt.includes('chemistry') || lowerPrompt.includes('biology')) {
-    return `**Scientific Topic: ${prompt}**\n\n**Core Understanding:**\n- Science explains natural phenomena through observation and experimentation\n- Key method: hypothesis → experiment → analysis → conclusion\n- Branches: Physics (matter/energy), Chemistry (substances), Biology (life)\n\n**Importance:** Drives innovation and understanding of our world.`;
+    return `**${prompt}**\n\nScience studies natural phenomena through observation and experimentation.`;
   }
   
   // History topics - concise responses
   if (lowerPrompt.includes('history') || lowerPrompt.includes('historical')) {
-    return `**Historical Topic: ${prompt}**\n\n**Understanding History:**\n- Study of past events and their impact on present\n- Learn from past experiences and decisions\n- Understand cultural and societal development\n\n**Value:** Provides context for current events and future planning.`;
+    return `**${prompt}**\n\nHistory studies past events and their impact on the present.`;
   }
 
   // Language and literature
   if (lowerPrompt.includes('english') || lowerPrompt.includes('language') || lowerPrompt.includes('literature')) {
-    return `**Language Arts: ${prompt}**\n\n**Core Elements:**\n- Communication through reading, writing, speaking, listening\n- Literature analysis and creative expression\n- Grammar, vocabulary, and language structure\n\n**Skills Developed:** Critical thinking, communication, and cultural understanding.`;
+    return `**${prompt}**\n\nLanguage arts covers reading, writing, speaking, and listening skills.`;
   }
 
   // Geography
   if (lowerPrompt.includes('geography') || lowerPrompt.includes('world') || lowerPrompt.includes('countries')) {
-    return `**Geography Topic: ${prompt}**\n\n**Understanding Geography:**\n- Study of Earth's physical features and human activities\n- Covers climate, landforms, populations, and cultures\n- Spatial relationships and environmental interactions\n\n**Application:** Essential for global awareness and environmental understanding.`;
+    return `**${prompt}**\n\nGeography studies Earth's physical features and human activities.`;
   }
   
   // Default concise educational response
-  return `**Educational Topic: ${prompt}**\n\n**Key Learning Points:**\n- Systematic approach to understanding the subject\n- Practical applications in real-world scenarios\n- Foundation for advanced learning\n\n**Learning Method:** Break complex topics into manageable parts for better comprehension.`;
+  return `**${prompt}**\n\nA systematic approach to understanding this topic with practical applications.`;
 };
 
 // Function to get relevant YouTube videos - only when truly relevant
