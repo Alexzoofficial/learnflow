@@ -1,5 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 export const PrivacyPage: React.FC = () => {
   const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -10,6 +12,16 @@ export const PrivacyPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        className="mb-4 text-muted-foreground hover:text-foreground"
+        onClick={() => window.history.back()}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+      
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold">Privacy Policy</h1>
         <p className="text-muted-foreground">

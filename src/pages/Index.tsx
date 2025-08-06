@@ -125,9 +125,14 @@ const Index = () => {
               </svg>
             </Button>
             
-            {/* App Title */}
-            <div className="flex-1 lg:flex-none lg:ml-4">
-              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-center lg:text-left tracking-tight">
+            {/* App Title with Logo */}
+            <div className="flex-1 lg:flex-none lg:ml-4 flex items-center justify-center lg:justify-start gap-3">
+              <img 
+                src="/lovable-uploads/bbca94df-df5d-4480-9c8c-916072af5a0e.png" 
+                alt="LearnFlow Logo" 
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg"
+              />
+              <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight">
                 LearnFlow
               </h1>
             </div>

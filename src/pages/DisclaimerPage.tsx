@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, ArrowLeft } from 'lucide-react';
 
 export const DisclaimerPage: React.FC = () => {
   const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -11,6 +12,16 @@ export const DisclaimerPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        className="mb-4 text-muted-foreground hover:text-foreground"
+        onClick={() => window.history.back()}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+      
       <div className="text-center space-y-2">
         <div className="flex items-center justify-center space-x-3 mb-4">
           <AlertTriangle className="h-8 w-8 text-secondary" />

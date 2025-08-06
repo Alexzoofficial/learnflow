@@ -1,10 +1,21 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { BookOpen, Brain, Globe, Lightbulb } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BookOpen, Brain, Globe, Lightbulb, ArrowLeft } from 'lucide-react';
 
 export const AboutPage: React.FC = () => {
   return (
     <div className="space-y-8">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        className="mb-4 text-muted-foreground hover:text-foreground"
+        onClick={() => window.history.back()}
+      >
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+      
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
           About LearnFlow

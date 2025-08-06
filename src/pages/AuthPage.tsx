@@ -5,7 +5,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import logo from '@/assets/logo.png';
+// Using uploaded logo directly
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -65,11 +65,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       <Card className="w-full max-w-md shadow-glow border-0 bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center pb-8">
+          {/* Back Button */}
+          <Button
+            variant="ghost"
+            className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
+            onClick={() => window.history.back()}
+          >
+            ← Back
+          </Button>
+          
           <div className="mx-auto w-20 h-20 mb-6">
             <img 
-              src={logo} 
+              src="/lovable-uploads/bbca94df-df5d-4480-9c8c-916072af5a0e.png" 
               alt="LearnFlow Logo" 
-              className="w-full h-full object-contain"
+              className="w-full h-full object-contain rounded-xl"
             />
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">
