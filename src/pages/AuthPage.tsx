@@ -46,36 +46,37 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email: email,
-          password: 'temp-password-123', // Temporary password
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Success",
-          description: "Check your email for verification link",
-        });
-      } else {
-        const { error } = await supabase.auth.signInWithOtp({
-          email: email,
-          options: {
-            shouldCreateUser: true
-          }
-        });
-        
-        if (error) throw error;
-        
-        toast({
-          title: "Success", 
-          description: "Check your email for the login link",
-        });
-      }
+      // Use OTP for both signup and signin - more secure than temporary passwords
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Success", 
+        description: isSignUp 
+          ? "Check your email for the verification link to complete signup"
+          : "Check your email for the secure login link",
+      });
     } catch (error: any) {
       toast({
         title: "Error",
@@ -87,14 +88,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
     setLoading(false);
   };
 
-  const handleGuestLogin = () => {
-    // Simple guest login for universal compatibility
-    onAuthSuccess();
-    toast({
-      title: "Success",
-      description: "Logged in as guest",
-    });
-  };
+  // Removed guest login for security - all users must authenticate
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
@@ -177,23 +171,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
             {loading ? 'Signing in...' : 'Continue with Google'}
           </Button>
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">Or</span>
-            </div>
-          </div>
-
-          <Button
-            onClick={handleGuestLogin}
-            variant="outline"
-            className="w-full"
-          >
-            <User className="w-4 h-4 mr-2" />
-            Continue as Guest
-          </Button>
+          <p className="text-xs text-center text-gray-500 mt-4">
+            Secure authentication required. All data is protected with proper access controls.
+          </p>
         </CardContent>
       </Card>
     </div>

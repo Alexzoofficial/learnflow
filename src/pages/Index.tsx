@@ -8,16 +8,51 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
+import { supabase } from '@/integrations/supabase/client';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import type { User, Session } from '@supabase/supabase-js';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePage, setActivePage] = useState('home');
-  const [user, setUser] = useState<any>(null);
+  const [activePage, setActivePage] = useState('auth');
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Initialize auth state
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        if (session?.user && activePage === 'auth') {
+          setActivePage('home');
+        } else if (!session?.user && activePage !== 'auth') {
+          setActivePage('auth');
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      if (!session?.user) {
+        setActivePage('auth');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [activePage]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -25,21 +60,49 @@ const Index = () => {
     setActivePage('home');
   };
 
-
   const handleLogout = async () => {
-    setUser(null);
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    setActivePage('home');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      setUser(null);
+      setSession(null);
+      setActivePage('auth');
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const renderPage = () => {
-    // Always show content, auth is optional
+    // Show loading screen while checking auth
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Always show auth page if not authenticated
+    if (!user && activePage !== 'auth') {
+      return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+    }
+
+    // Render requested page for authenticated users
     switch (activePage) {
       case 'home':
-        return <HomePage />;
+        return user ? <HomePage /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
       case 'about':
         return <AboutPage />;
       case 'terms':
@@ -51,7 +114,7 @@ const Index = () => {
       case 'auth':
         return <AuthPage onAuthSuccess={handleAuthSuccess} />;
       default:
-        return <HomePage />;
+        return user ? <HomePage /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
     }
   };
 
