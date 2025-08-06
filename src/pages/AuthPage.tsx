@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -11,20 +12,48 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        onAuthSuccess();
+      }
+    };
+    checkUser();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session) {
+        onAuthSuccess();
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [onAuthSuccess]);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     
     try {
-      // For now, just call onAuthSuccess to actually log in
-      onAuthSuccess();
-      toast({
-        title: "Success",
-        description: "Successfully logged in!",
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
       });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Login failed. Please try again.",
+        title: "Error", 
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
     }
