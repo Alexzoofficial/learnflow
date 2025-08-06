@@ -30,21 +30,21 @@ const generateEducationalResponse = (prompt: string): string => {
   
   // Math problems
   if (lowerPrompt.includes('2 + 2') || lowerPrompt.includes('2+2')) {
-    return `📧 **Email Service Integration**\n\nFor your question about 2 + 2:\n\n**Answer: 4**\n\n**Mathematical Explanation:**\n- Addition is one of the basic arithmetic operations\n- When we add 2 + 2, we combine two groups of 2 items\n- The result is 4\n\n**Educational Context:**\n- This demonstrates basic addition principles\n- Foundation for more complex mathematical operations\n- Important building block for arithmetic skills\n\n*This response is provided via email service integration.*`;
+    return `**Answer: 4**\n\n**Mathematical Explanation:**\n- Addition is one of the basic arithmetic operations\n- When we add 2 + 2, we combine two groups of 2 items\n- The result is 4\n\n**Educational Context:**\n- This demonstrates basic addition principles\n- Foundation for more complex mathematical operations\n- Important building block for arithmetic skills`;
   }
   
   // Science topics
   if (lowerPrompt.includes('science') || lowerPrompt.includes('physics') || lowerPrompt.includes('chemistry')) {
-    return `📧 **Email Service Response**\n\n**Scientific Explanation for: "${prompt}"**\n\nScience is the systematic study of the natural world through observation and experimentation. Here's a comprehensive overview:\n\n**Key Scientific Principles:**\n- Observation and hypothesis formation\n- Experimental design and testing\n- Data analysis and conclusion drawing\n- Peer review and validation\n\n**Applications:**\n- Understanding natural phenomena\n- Technological advancement\n- Problem-solving methodologies\n- Innovation and discovery\n\n*Educational content delivered through email service.*`;
+    return `**Scientific Explanation for: "${prompt}"**\n\nScience is the systematic study of the natural world through observation and experimentation. Here's a comprehensive overview:\n\n**Key Scientific Principles:**\n- Observation and hypothesis formation\n- Experimental design and testing\n- Data analysis and conclusion drawing\n- Peer review and validation\n\n**Applications:**\n- Understanding natural phenomena\n- Technological advancement\n- Problem-solving methodologies\n- Innovation and discovery`;
   }
   
   // History topics
   if (lowerPrompt.includes('history') || lowerPrompt.includes('historical')) {
-    return `📧 **Email Service Response**\n\n**Historical Analysis for: "${prompt}"**\n\nHistory helps us understand past events and their impact on the present:\n\n**Why Study History:**\n- Learn from past mistakes\n- Understand cultural development\n- Appreciate societal progress\n- Develop critical thinking skills\n\n**Research Methods:**\n- Primary source analysis\n- Archaeological evidence\n- Cross-referencing multiple sources\n- Timeline construction\n\n*Comprehensive historical content via email service.*`;
+    return `**Historical Analysis for: "${prompt}"**\n\nHistory helps us understand past events and their impact on the present:\n\n**Why Study History:**\n- Learn from past mistakes\n- Understand cultural development\n- Appreciate societal progress\n- Develop critical thinking skills\n\n**Research Methods:**\n- Primary source analysis\n- Archaeological evidence\n- Cross-referencing multiple sources\n- Timeline construction`;
   }
   
   // Default educational response
-  return `📧 **Email Service Response**\n\n**Educational Answer for: "${prompt}"**\n\nThank you for your question! Here's a comprehensive educational response:\n\n**Key Learning Points:**\n- Understanding the fundamentals of your topic\n- Practical applications and real-world examples\n- Step-by-step explanations for clarity\n- Additional resources for deeper learning\n\n**Educational Approach:**\n- Clear, structured explanations\n- Interactive learning opportunities\n- Progressive skill development\n- Critical thinking enhancement\n\n**Next Steps:**\n- Practice the concepts learned\n- Explore related topics\n- Apply knowledge to real situations\n- Seek additional resources when needed\n\n*This educational content is delivered through our email service integration.*`;
+  return `**Educational Answer for: "${prompt}"**\n\nThank you for your question! Here's a comprehensive educational response:\n\n**Key Learning Points:**\n- Understanding the fundamentals of your topic\n- Practical applications and real-world examples\n- Step-by-step explanations for clarity\n- Additional resources for deeper learning\n\n**Educational Approach:**\n- Clear, structured explanations\n- Interactive learning opportunities\n- Progressive skill development\n- Critical thinking enhancement\n\n**Next Steps:**\n- Practice the concepts learned\n- Explore related topics\n- Apply knowledge to real situations\n- Seek additional resources when needed`;
 };
 
 // Function to get relevant YouTube videos based on the prompt
