@@ -1,11 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { auth } from '@/lib/firebase';
-import { signInWithGoogle } from '@/integrations/firebase/auth';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-// Using uploaded logo directly
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -13,59 +9,26 @@ interface AuthPageProps {
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
   const { toast } = useToast();
-
-  useEffect(() => {
-    // Listen for auth changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      
-      if (user) {
-        // Defer any additional operations
-        setTimeout(() => {
-          onAuthSuccess();
-        }, 0);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [onAuthSuccess]);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-
-    try {
-      const { user, error } = await signInWithGoogle();
-
-      if (error) {
-        toast({
-          title: "Login Failed",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Success",
-          description: "Logged in successfully with Google!",
-        });
-      }
-    } catch (error) {
+    
+    // Mock authentication for now
+    setTimeout(() => {
       toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
+        title: "Success",
+        description: "Authentication will be implemented with Supabase!",
       });
-    } finally {
       setLoading(false);
-    }
+      onAuthSuccess();
+    }, 1000);
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-primary p-4">
       <Card className="w-full max-w-md shadow-glow border-0 bg-white/95 backdrop-blur-sm">
         <CardHeader className="text-center pb-8">
-          {/* Back Button */}
           <Button
             variant="ghost"
             className="absolute top-4 left-4 text-muted-foreground hover:text-foreground"
@@ -85,7 +48,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
             Welcome to LearnFlow
           </CardTitle>
           <p className="text-muted-foreground mt-2">
-            Continue your learning journey with Google
+            Continue your learning journey
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

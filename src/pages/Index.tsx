@@ -11,35 +11,15 @@ import { NotificationCenter } from '@/components/NotificationCenter';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/lib/firebase';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { useAnalytics } from '@/hooks/useAnalytics';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState('home');
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
-  const { track, trackPageView } = useAnalytics();
-
-  useEffect(() => {
-    // Listen for auth changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setSession(user ? { user } : null);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-
-  // Track page changes
-  useEffect(() => {
-    trackPageView(activePage);
-  }, [activePage, trackPageView]);
 
   const handleAuthSuccess = () => {
     setActivePage('home');
@@ -47,29 +27,12 @@ const Index = () => {
 
 
   const handleLogout = async () => {
-    try {
-      const { logout } = await import("@/integrations/firebase/auth");
-      const { error } = await logout();
-      if (error) {
-        toast({
-          title: "Logout Failed",
-          description: error,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Logged Out",
-          description: "You have been successfully logged out.",
-        });
-        setActivePage('home');
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred during logout.",
-        variant: "destructive",
-      });
-    }
+    setUser(null);
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    setActivePage('home');
   };
 
   const renderPage = () => {
