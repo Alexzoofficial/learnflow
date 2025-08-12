@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, User } from 'lucide-react';
+import { Mail } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthSuccess: () => void;
@@ -92,41 +92,40 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true,
         }
       });
 
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+      if (error) throw error;
+
+      if (data?.url) {
+        // Navigate within the current webview to keep the flow inside the app
+        window.location.assign(data.url);
       }
     } catch (error: any) {
       toast({
-        title: "Error", 
-        description: "An unexpected error occurred",
+        title: "Error",
+        description: error.message ?? "An unexpected error occurred",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">
+          <CardTitle className="text-2xl font-bold">
             Welcome to LearnFlow
           </CardTitle>
-          <p className="text-gray-600 mt-2">
+          <p className="text-muted-foreground mt-2">
             Your AI-powered education assistant
           </p>
         </CardHeader>
@@ -143,7 +142,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
             <Button
               onClick={handleEmailAuth}
               disabled={loading}
-              className="w-full bg-blue-600 text-white hover:bg-blue-700"
+              variant="default"
+              className="w-full"
             >
               <Mail className="w-4 h-4 mr-2" />
               {loading ? 'Processing...' : isSignUp ? 'Sign Up with Email' : 'Login with Email'}
@@ -160,7 +160,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           <Button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
+            variant="outline"
+            className="w-full"
           >
             <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -171,7 +172,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
             {loading ? 'Signing in...' : 'Continue with Google'}
           </Button>
 
-          <p className="text-xs text-center text-gray-500 mt-4">
+          <p className="text-xs text-center text-muted-foreground mt-4">
             Secure authentication required. All data is protected with proper access controls.
           </p>
         </CardContent>
