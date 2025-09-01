@@ -7,117 +7,14 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
+    PostgrestVersion: "13.0.4"
   }
   public: {
     Tables: {
-      notification_recipients: {
-        Row: {
-          created_at: string
-          id: string
-          notification_id: string | null
-          read_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          notification_id?: string | null
-          read_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          notification_id?: string | null
-          read_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notification_recipients_notification_id_fkey"
-            columns: ["notification_id"]
-            isOneToOne: false
-            referencedRelation: "notifications"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notifications: {
-        Row: {
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          image_url: string | null
-          is_sent: boolean
-          link_text: string | null
-          link_url: string | null
-          scheduled_at: string | null
-          sent_at: string | null
-          target_audience: string | null
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          is_sent?: boolean
-          link_text?: string | null
-          link_url?: string | null
-          scheduled_at?: string | null
-          sent_at?: string | null
-          target_audience?: string | null
-          title: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          is_sent?: boolean
-          link_text?: string | null
-          link_url?: string | null
-          scheduled_at?: string | null
-          sent_at?: string | null
-          target_audience?: string | null
-          title?: string
-        }
-        Relationships: []
-      }
-      profiles: {
-        Row: {
-          avatar_url: string | null
-          created_at: string
-          display_name: string | null
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          avatar_url?: string | null
-          created_at?: string
-          display_name?: string | null
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
