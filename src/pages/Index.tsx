@@ -8,65 +8,48 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from "@/lib/firebase";
+import { onAuthStateChanged, signOut, User } from "firebase/auth";
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import type { User, Session } from '@supabase/supabase-js';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activePage, setActivePage] = useState('auth');
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   // Initialize auth state
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        if (session?.user && activePage === 'auth') {
-          setActivePage('home');
-        } else if (!session?.user && activePage !== 'auth') {
-          setActivePage('auth');
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Listen for auth changes
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
       setLoading(false);
       
-      if (!session?.user) {
+      if (user && activePage === 'auth') {
+        setActivePage('home');
+      } else if (!user && activePage !== 'auth') {
         setActivePage('auth');
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [activePage]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (user: User) => {
+    setUser(user);
     setActivePage('home');
   };
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      await signOut(auth);
       setUser(null);
-      setSession(null);
       setActivePage('auth');
       toast({
         title: "Logged Out",

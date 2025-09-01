@@ -3,44 +3,37 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { auth, googleProvider } from '@/lib/firebase';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 import { Mail } from 'lucide-react';
 
 interface AuthPageProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (user: User) => void;
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        onAuthSuccess();
-      }
-    };
-    checkUser();
-
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        onAuthSuccess();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        onAuthSuccess(user);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [onAuthSuccess]);
 
   const handleEmailAuth = async () => {
-    if (!email.trim()) {
+    if (!email.trim() || !password.trim()) {
       toast({
         title: "Error",
-        description: "Please enter your email",
+        description: "Please enter both email and password",
         variant: "destructive",
       });
       return;
@@ -57,30 +50,35 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
       return;
     }
 
+    if (password.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     
     try {
-      // Use OTP for both signup and signin - more secure than temporary passwords
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email,
-        options: {
-          shouldCreateUser: true,
-          emailRedirectTo: `${window.location.origin}/`
-        }
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success", 
-        description: isSignUp 
-          ? "Check your email for the verification link to complete signup"
-          : "Check your email for the secure login link",
-      });
+      if (isSignUp) {
+        await createUserWithEmailAndPassword(auth, email, password);
+        toast({
+          title: "Success", 
+          description: "Account created successfully!",
+        });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast({
+          title: "Success", 
+          description: "Logged in successfully!",
+        });
+      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Authentication failed",
         variant: "destructive",
       });
     }
@@ -93,24 +91,15 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-          skipBrowserRedirect: true,
-        }
+      const result = await signInWithPopup(auth, googleProvider);
+      toast({
+        title: "Success",
+        description: "Signed in with Google successfully!",
       });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        // Navigate within the current webview to keep the flow inside the app
-        window.location.assign(data.url);
-      }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message ?? "An unexpected error occurred",
+        description: error.message || "Google sign-in failed",
         variant: "destructive",
       });
     } finally {
@@ -139,6 +128,14 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
               className="w-full"
             />
             
+            <Input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full"
+            />
+            
             <Button
               onClick={handleEmailAuth}
               disabled={loading}
@@ -151,7 +148,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
 
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="w-full text-sm text-blue-600 hover:underline"
+              className="w-full text-sm text-primary hover:underline"
             >
               {isSignUp ? 'Already have an account? Login' : 'Need an account? Sign up'}
             </button>
@@ -173,7 +170,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess }) => {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground mt-4">
-            Secure authentication required. All data is protected with proper access controls.
+            Secure Firebase authentication. All data is protected with proper access controls.
           </p>
         </CardContent>
       </Card>
