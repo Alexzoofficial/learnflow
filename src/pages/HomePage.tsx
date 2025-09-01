@@ -23,7 +23,7 @@ export const HomePage: React.FC = () => {
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const { toast } = useToast();
 
-  const handleQuestionSubmit = async (question: string, image?: File) => {
+  const handleQuestionSubmit = async (question: string, image?: File, linkUrl?: string) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
@@ -37,9 +37,14 @@ export const HomePage: React.FC = () => {
         requestData.image = base64;
       }
 
+      // Add link URL if provided
+      if (linkUrl) {
+        requestData.linkUrl = linkUrl;
+      }
+
       // Call Supabase edge function
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { prompt: question, image: requestData.image }
+        body: requestData
       });
 
       if (error) throw error;
