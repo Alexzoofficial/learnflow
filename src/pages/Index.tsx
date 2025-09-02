@@ -10,6 +10,7 @@ import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
+import { useRequestLimit } from '@/hooks/useRequestLimit';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,9 @@ const Index = () => {
   const [activePage, setActivePage] = useState('auth');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { toast } = useToast();
+  const { isLimitReached, remainingRequests } = useRequestLimit();
 
   // Initialize auth state
   useEffect(() => {
@@ -31,8 +34,7 @@ const Index = () => {
         
         if (session?.user && activePage === 'auth') {
           setActivePage('home');
-        } else if (!session?.user && activePage !== 'auth') {
-          setActivePage('auth');
+          setShowAuthModal(false);
         }
       }
     );
@@ -44,8 +46,7 @@ const Index = () => {
       
       if (session?.user && activePage === 'auth') {
         setActivePage('home');
-      } else if (!session?.user && activePage !== 'auth') {
-        setActivePage('auth');
+        setShowAuthModal(false);
       }
     });
 
@@ -57,6 +58,20 @@ const Index = () => {
   const handleAuthSuccess = (user: User) => {
     setUser(user);
     setActivePage('home');
+    setShowAuthModal(false);
+  };
+
+  const handleShowAuth = () => {
+    if (!user && isLimitReached) {
+      setShowAuthModal(true);
+      toast({
+        title: "Daily Limit Reached",
+        description: `You've reached your daily limit of 5 requests. Please sign in to continue.`,
+        variant: "destructive",
+      });
+    } else if (!user) {
+      setActivePage('auth');
+    }
   };
 
   const handleLogout = async () => {
@@ -90,15 +105,21 @@ const Index = () => {
       );
     }
 
-    // Always show auth page if not authenticated
-    if (!user && activePage !== 'auth') {
-      return <AuthPage onAuthSuccess={handleAuthSuccess} />;
+    // Show auth modal if limit reached for unauthenticated users
+    if (!user && showAuthModal) {
+      return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md">
+            <AuthPage onAuthSuccess={handleAuthSuccess} onClose={() => setShowAuthModal(false)} />
+          </div>
+        </div>
+      );
     }
 
     // Render requested page for authenticated users
     switch (activePage) {
       case 'home':
-        return user ? <HomePage /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+        return <HomePage user={user} onShowAuth={handleShowAuth} />;
       case 'about':
         return <AboutPage />;
       case 'terms':
@@ -110,7 +131,7 @@ const Index = () => {
       case 'auth':
         return <AuthPage onAuthSuccess={handleAuthSuccess} />;
       default:
-        return user ? <HomePage /> : <AuthPage onAuthSuccess={handleAuthSuccess} />;
+        return <HomePage user={user} onShowAuth={handleShowAuth} />;
     }
   };
 
@@ -163,7 +184,7 @@ const Index = () => {
                 <Button
                   variant="ghost"
                   className="text-primary-foreground hover:bg-white/20 flex items-center gap-1 px-2 py-1 sm:px-3 sm:py-2 rounded-full border border-white/20 text-xs sm:text-sm"
-                  onClick={() => setActivePage('auth')}
+                  onClick={handleShowAuth}
                 >
                   <div className="w-4 h-4 sm:w-5 sm:h-5 bg-white/20 rounded-full flex items-center justify-center">
                     <UserIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3" />

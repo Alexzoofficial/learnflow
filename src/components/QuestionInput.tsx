@@ -9,9 +9,10 @@ import { VoiceRecorder } from './VoiceRecorder';
 interface QuestionInputProps {
   onSubmit: (question: string, image?: File, linkUrl?: string) => void;
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoading }) => {
+export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoading, disabled = false }) => {
   const [mode, setMode] = useState<'text' | 'image' | 'voice' | 'link'>('text');
   const [question, setQuestion] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -121,7 +122,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
             onKeyDown={handleKeyDown}
             placeholder="Ask LearnFlow anything... e.g., 'Explain relativity', 'Solve 2x + 5 = 15'"
             className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base border-2 focus:border-primary"
-            disabled={isLoading}
+            disabled={isLoading || disabled}
           />
         </div>
       )}
@@ -158,7 +159,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
               onChange={(e) => setLinkUrl(e.target.value)}
               placeholder="https://example.com or paste any link here..."
               className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm sm:text-base"
-              disabled={isLoading}
+              disabled={isLoading || disabled}
             />
           </div>
           <div className="text-xs text-muted-foreground">
@@ -234,7 +235,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
           variant="solve"
           className="w-full mt-4 sm:mt-6 h-12 text-base font-semibold"
           onClick={handleSubmit}
-          disabled={isLoading || (mode === 'text' && !question.trim()) || (mode === 'image' && !selectedImage) || (mode === 'link' && !linkUrl.trim())}
+          disabled={isLoading || disabled || (mode === 'text' && !question.trim()) || (mode === 'image' && !selectedImage) || (mode === 'link' && !linkUrl.trim())}
         >
           {isLoading ? 'Processing...' : 'Get Answer'}
         </Button>

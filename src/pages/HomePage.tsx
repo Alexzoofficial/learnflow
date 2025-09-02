@@ -6,6 +6,8 @@ import { FeatureCards } from '@/components/FeatureCards';
 import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useRequestLimit } from '@/hooks/useRequestLimit';
+import { RequestLimitBanner } from '@/components/RequestLimitBanner';
 
 interface YouTubeVideo {
   id: string;
@@ -15,15 +17,43 @@ interface YouTubeVideo {
   embed: string;
 }
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+  user?: any;
+  onShowAuth?: () => void;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [activeSubject, setActiveSubject] = useState('general');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const { toast } = useToast();
+  const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
   const handleQuestionSubmit = async (question: string, image?: File, linkUrl?: string) => {
+    // Check request limit for unauthenticated users
+    if (!user && isLimitReached) {
+      toast({
+        title: "Daily Limit Reached",
+        description: "You've reached your daily limit. Please sign in to continue.",
+        variant: "destructive",
+      });
+      onShowAuth?.();
+      return;
+    }
+
+    // For unauthenticated users, check if they can make a request
+    if (!user && !incrementRequest()) {
+      toast({
+        title: "Daily Limit Reached",
+        description: "You've reached your daily limit of 5 requests. Please sign in to continue.",
+        variant: "destructive",
+      });
+      onShowAuth?.();
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setResult(null);
@@ -83,6 +113,15 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Request Limit Banner for unauthenticated users */}
+      {!user && (
+        <RequestLimitBanner 
+          remainingRequests={remainingRequests}
+          isLimitReached={isLimitReached}
+          onShowAuth={onShowAuth || (() => {})}
+        />
+      )}
+      
       {/* Subject Tabs - Mobile Optimized */}
       <div className="w-full">
         <SubjectTabs 
@@ -95,7 +134,8 @@ export const HomePage: React.FC = () => {
       <div className="w-full">
         <QuestionInput 
           onSubmit={handleQuestionSubmit} 
-          isLoading={isLoading} 
+          isLoading={isLoading}
+          disabled={!user && isLimitReached}
         />
       </div>
       
