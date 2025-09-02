@@ -8,8 +8,8 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 import { NotificationCenter } from '@/components/NotificationCenter';
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,19 +24,32 @@ const Index = () => {
 
   // Initialize auth state
   useEffect(() => {
-    // Listen for auth changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        if (session?.user && activePage === 'auth') {
+          setActivePage('home');
+        } else if (!session?.user && activePage !== 'auth') {
+          setActivePage('auth');
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
       setLoading(false);
       
-      if (user && activePage === 'auth') {
+      if (session?.user && activePage === 'auth') {
         setActivePage('home');
-      } else if (!user && activePage !== 'auth') {
+      } else if (!session?.user && activePage !== 'auth') {
         setActivePage('auth');
       }
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, [activePage]);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -48,7 +61,7 @@ const Index = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       setUser(null);
       setActivePage('auth');
       toast({
