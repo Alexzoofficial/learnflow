@@ -74,7 +74,10 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
 
       // Call Supabase edge function
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: requestData
+        body: requestData,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
 
       if (error) throw error;

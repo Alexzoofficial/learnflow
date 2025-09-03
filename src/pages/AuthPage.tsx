@@ -125,8 +125,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
   // Removed guest login and social login for security - all users must authenticate with email
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="text-center relative">
           {onClose && (
             <Button
@@ -215,6 +214,5 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
           </p>
         </CardContent>
       </Card>
-    </div>
   );
 };
