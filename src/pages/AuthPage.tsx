@@ -90,16 +90,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-          },
         });
         
         if (error) throw error;
         
         toast({
           title: "Success", 
-          description: "Account created successfully! Please check your email to verify your account.",
+          description: "Account created successfully! You can now sign in.",
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
