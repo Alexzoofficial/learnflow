@@ -1,6 +1,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
+const googleAIApiKey = Deno.env.get('GOOGLE_AI_API_KEY');
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -100,14 +102,14 @@ serve(async (req) => {
 
     console.log('Processing AI chat request for:', sanitizedPrompt);
 
-    // Generate educational response
-    const educationalResponse = generateEducationalResponse(sanitizedPrompt);
+    // Generate AI response using Google AI API
+    const aiResponse = await generateAIResponse(sanitizedPrompt);
     
     // Get relevant YouTube videos (only if relevant to the topic)
     const videos = getRelevantVideos(sanitizedPrompt);
 
     const response = {
-      text: educationalResponse,
+      text: aiResponse,
       videos: videos
     };
 
@@ -135,8 +137,59 @@ serve(async (req) => {
   }
 });
 
-// Function to generate concise educational content
-const generateEducationalResponse = (prompt: string): string => {
+// Function to generate AI response using Google AI API
+const generateAIResponse = async (prompt: string): Promise<string> => {
+  try {
+    if (!googleAIApiKey) {
+      console.log('Google AI API key not found, using fallback response');
+      return generateFallbackResponse(prompt);
+    }
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleAIApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `You are an educational AI assistant. Please provide a helpful, accurate, and concise answer to this question: ${prompt}`
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Google AI API error:', response.status, response.statusText);
+      return generateFallbackResponse(prompt);
+    }
+
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
+      return data.candidates[0].content.parts[0].text;
+    } else {
+      console.error('Unexpected Google AI API response structure:', data);
+      return generateFallbackResponse(prompt);
+    }
+  } catch (error) {
+    console.error('Error calling Google AI API:', error);
+    return generateFallbackResponse(prompt);
+  }
+};
+
+// Fallback function for when API is not available
+const generateFallbackResponse = (prompt: string): string => {
   const lowerPrompt = prompt.toLowerCase();
   
   // Math problems - direct answers only

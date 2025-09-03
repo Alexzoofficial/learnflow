@@ -96,7 +96,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
         
         toast({
           title: "Success", 
-          description: "Account created successfully! You can now sign in.",
+          description: "Account created successfully! You are now logged in.",
         });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
