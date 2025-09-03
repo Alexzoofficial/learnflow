@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePage, setActivePage] = useState('auth');
+  const [activePage, setActivePage] = useState('home');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -32,7 +32,7 @@ const Index = () => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        if (session?.user && activePage === 'auth') {
+        if (session?.user) {
           setActivePage('home');
           setShowAuthModal(false);
         }
@@ -43,15 +43,10 @@ const Index = () => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      if (session?.user && activePage === 'auth') {
-        setActivePage('home');
-        setShowAuthModal(false);
-      }
     });
 
     return () => subscription.unsubscribe();
-  }, [activePage]);
+  }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
@@ -64,13 +59,8 @@ const Index = () => {
   const handleShowAuth = () => {
     if (!user && isLimitReached) {
       setShowAuthModal(true);
-      toast({
-        title: "Daily Limit Reached",
-        description: `You've reached your daily limit of 5 requests. Please sign in to continue.`,
-        variant: "destructive",
-      });
     } else if (!user) {
-      setActivePage('auth');
+      setShowAuthModal(true);
     }
   };
 
@@ -78,7 +68,7 @@ const Index = () => {
     try {
       await supabase.auth.signOut();
       setUser(null);
-      setActivePage('auth');
+      setActivePage('home');
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out.",
@@ -105,8 +95,8 @@ const Index = () => {
       );
     }
 
-    // Show auth modal if limit reached for unauthenticated users
-    if (!user && showAuthModal) {
+    // Show auth modal for unauthenticated users
+    if (showAuthModal) {
       return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="w-full max-w-md">
@@ -116,7 +106,7 @@ const Index = () => {
       );
     }
 
-    // Render requested page for authenticated users
+    // Render requested page
     switch (activePage) {
       case 'home':
         return <HomePage user={user} onShowAuth={handleShowAuth} />;
@@ -128,8 +118,6 @@ const Index = () => {
         return <PrivacyPage />;
       case 'disclaimer':
         return <DisclaimerPage />;
-      case 'auth':
-        return <AuthPage onAuthSuccess={handleAuthSuccess} />;
       default:
         return <HomePage user={user} onShowAuth={handleShowAuth} />;
     }
