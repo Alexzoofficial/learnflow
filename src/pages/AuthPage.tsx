@@ -101,6 +101,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/`,
+            data: {}
           }
         });
         
@@ -281,25 +282,26 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
             </div>
           ) : isOtpSent ? (
             <div className="space-y-3">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-4">
+              <div className="flex flex-col items-center space-y-4">
+                <p className="text-sm text-muted-foreground text-center">
                   Enter the 6-digit code sent to {email}
                 </p>
-                <InputOTP
-                  maxLength={6}
-                  value={otp}
-                  onChange={(value) => setOtp(value)}
-                  className="justify-center"
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
+                <div className="flex justify-center w-full">
+                  <InputOTP
+                    maxLength={6}
+                    value={otp}
+                    onChange={(value) => setOtp(value)}
+                  >
+                    <InputOTPGroup className="gap-2">
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
               </div>
               
               <Button
