@@ -53,9 +53,9 @@ export const DisclaimerPage: React.FC = () => {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold mb-3">Educational Use for All Ages</h2>
+            <h2 className="text-xl font-semibold mb-3">Educational Use for Ages 3+</h2>
             <p>
-              LearnFlow is designed as an educational tool suitable for learners of all ages - from children to adults. It assists with learning and understanding across various subjects and topics. The service should be used to supplement, not replace, traditional educational resources, instructors, and critical thinking. Users of all ages are encouraged to cross-verify information obtained from the Service with other reliable sources, especially for critical decisions or academic submissions. Parental guidance is recommended for younger users.
+              LearnFlow is designed as an educational tool suitable for learners aged 3 years and above. It assists with learning and understanding across various subjects and topics. The service should be used to supplement, not replace, traditional educational resources, instructors, and critical thinking. Users of all ages are encouraged to cross-verify information obtained from the Service with other reliable sources, especially for critical decisions or academic submissions. Parental guidance is recommended for younger users.
             </p>
           </section>
 

@@ -86,7 +86,7 @@ export const PrivacyPage: React.FC = () => {
           <section>
             <h2 className="text-xl font-semibold mb-3">6. Age-Appropriate Content</h2>
             <p>
-              LearnFlow is designed to be educational and suitable for all ages. We strive to provide content that is appropriate for learners of all age groups, from children to adults. While we don't directly collect personal data from children, we recommend parental guidance for users under 13. If you're a parent/guardian and have concerns about your child's use of our service, please contact us.
+              LearnFlow is designed to be educational and suitable for ages 3 years and above. We strive to provide content that is appropriate for learners of all age groups, from children (3+) to adults. While we don't directly collect personal data from children, we recommend parental guidance for users under 13. If you're a parent/guardian and have concerns about your child's use of our service, please contact us.
             </p>
           </section>
 

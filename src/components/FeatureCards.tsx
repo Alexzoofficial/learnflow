@@ -24,7 +24,7 @@ const features = [
   {
     icon: Zap,
     title: 'AI Powered',
-    description: 'Intelligent answers by Google Gemini and Alexzo Intelligence.',
+    description: 'आपका सारा डेटा हमारे पास सुरक्षित है।',
     gradient: 'from-orange-500 to-orange-600'
   },
 ];

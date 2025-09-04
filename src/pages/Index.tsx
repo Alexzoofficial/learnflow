@@ -7,7 +7,7 @@ import { PrivacyPage } from '@/pages/PrivacyPage';
 import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
-import { NotificationCenter } from '@/components/NotificationCenter';
+
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
@@ -165,7 +165,6 @@ const Index = () => {
             
             {/* Header Actions */}
             <div className="flex items-center space-x-2">
-              {user && <NotificationCenter />}
               {user ? (
                 <ProfileMenu user={user} onLogout={handleLogout} />
               ) : (
