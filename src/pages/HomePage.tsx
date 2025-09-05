@@ -63,8 +63,10 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
       
       // Convert image to base64 if provided
       if (image) {
+        console.log('Converting image to base64:', image.name, image.size);
         const base64 = await convertImageToBase64(image);
         requestData.image = base64;
+        console.log('Image converted to base64, length:', base64.length);
       }
 
       // Add link URL if provided
@@ -72,13 +74,19 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
         requestData.linkUrl = linkUrl;
       }
 
+      console.log('Sending request to AI:', requestData);
+
       // Call Supabase edge function
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: requestData
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
+      console.log('AI response received:', data);
       setResult(data.text);
       setVideos(data.videos || []);
       

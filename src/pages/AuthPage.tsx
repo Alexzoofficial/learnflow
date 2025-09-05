@@ -80,12 +80,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
     try {
       if (isForgotPassword) {
         // Send OTP for password reset
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-            emailRedirectTo: undefined,
-          }
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
         });
         
         if (error) throw error;
@@ -375,7 +371,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
 
 
           <p className="text-xs text-center text-muted-foreground mt-4">
-            Secure Supabase authentication. All data is protected with proper access controls.
+            आपका सारा डेटा हमारे पास सुरक्षित है। Contact: alexzomail@proton.me
           </p>
         </CardContent>
       </Card>

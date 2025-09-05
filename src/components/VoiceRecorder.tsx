@@ -16,6 +16,10 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
 
   const startRecording = async () => {
     try {
+      // Request microphone permission first
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop()); // Stop the stream after permission check
+      
       // Check if browser supports speech recognition
       if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         alert('Speech recognition is not supported in this browser. Please use Chrome or Edge.');
@@ -32,10 +36,12 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
 
       recognition.current.onstart = () => {
         setIsRecording(true);
+        console.log('Voice recording started');
       };
 
       recognition.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
+        console.log('Voice transcript:', transcript);
         if (transcript && transcript.trim()) {
           onSubmit(transcript.trim());
         } else {
@@ -61,6 +67,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
 
       recognition.current.onend = () => {
         setIsRecording(false);
+        console.log('Voice recording ended');
       };
 
       recognition.current.start();
