@@ -218,7 +218,8 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
   // Removed guest login and social login for security - all users must authenticate with email
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <div className="min-h-screen w-full flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-lg mx-auto">
         <CardHeader className="text-center relative">
           {onClose && (
             <Button
@@ -375,9 +376,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
 
 
           <p className="text-xs text-center text-muted-foreground mt-4">
-            आपका सारा डेटा हमारे पास सुरक्षित है। Contact: alexzomail@proton.me
+            Your data is protected with us. Contact: alexzomail@proton.me
           </p>
         </CardContent>
       </Card>
+    </div>
   );
 };

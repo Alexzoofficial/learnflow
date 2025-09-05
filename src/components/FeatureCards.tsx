@@ -24,7 +24,7 @@ const features = [
   {
     icon: Zap,
     title: 'AI Powered',
-    description: 'आपका सारा डेटा हमारे पास सुरक्षित है।',
+    description: 'Advanced AI technology for accurate learning assistance.',
     gradient: 'from-orange-500 to-orange-600'
   },
 ];
