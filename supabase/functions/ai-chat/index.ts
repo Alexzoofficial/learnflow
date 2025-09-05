@@ -101,9 +101,19 @@ serve(async (req) => {
     }
 
     console.log('Processing AI chat request for:', sanitizedPrompt);
+    
+    // Check if image is provided
+    if (requestBody.image) {
+      console.log('Image data received, length:', requestBody.image.length);
+    }
+    
+    // Check if link URL is provided
+    if (requestBody.linkUrl) {
+      console.log('Link URL received:', requestBody.linkUrl);
+    }
 
-    // Generate AI response using Google AI API
-    const aiResponse = await generateAIResponse(sanitizedPrompt);
+    // Generate AI response using Google AI API with image support
+    const aiResponse = await generateAIResponse(sanitizedPrompt, requestBody.image, requestBody.linkUrl);
     
     // Get relevant YouTube videos (only if relevant to the topic)
     const videos = getRelevantVideos(sanitizedPrompt);
@@ -138,11 +148,61 @@ serve(async (req) => {
 });
 
 // Function to generate AI response using Google AI API
-const generateAIResponse = async (prompt: string): Promise<string> => {
+const generateAIResponse = async (prompt: string, image?: string, linkUrl?: string): Promise<string> => {
   try {
     if (!googleAIApiKey) {
       console.log('Google AI API key not found, using fallback response');
       return generateFallbackResponse(prompt);
+    }
+
+    const requestBody: any = {
+      contents: [
+        {
+          parts: []
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
+      }
+    };
+
+    // Add text prompt
+    let fullPrompt = `You are an educational AI assistant. Please provide a helpful, accurate, and concise answer to this question: ${prompt}`;
+    
+    // Handle image input
+    if (image) {
+      console.log('Processing image with AI request');
+      fullPrompt += '\n\nPlease analyze the provided image and incorporate it into your response.';
+      
+      // Extract base64 data from data URL if present
+      let base64Data = image;
+      if (image.startsWith('data:')) {
+        base64Data = image.split(',')[1];
+      }
+      
+      requestBody.contents[0].parts.push({
+        text: fullPrompt
+      });
+      
+      requestBody.contents[0].parts.push({
+        inline_data: {
+          mime_type: "image/jpeg",
+          data: base64Data
+        }
+      });
+    } else {
+      requestBody.contents[0].parts.push({
+        text: fullPrompt
+      });
+    }
+    
+    // Handle link URL
+    if (linkUrl) {
+      console.log('Processing link URL:', linkUrl);
+      requestBody.contents[0].parts[0].text += `\n\nAdditionally, please analyze this link: ${linkUrl}`;
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleAIApiKey}`, {
@@ -150,27 +210,13 @@ const generateAIResponse = async (prompt: string): Promise<string> => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `You are an educational AI assistant. Please provide a helpful, accurate, and concise answer to this question: ${prompt}`
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1024,
-        }
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       console.error('Google AI API error:', response.status, response.statusText);
+      const errorText = await response.text();
+      console.error('Error details:', errorText);
       return generateFallbackResponse(prompt);
     }
 
