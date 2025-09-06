@@ -29,7 +29,7 @@ export const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ onSubmit, isLoadin
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognition.current = new SpeechRecognition();
       
-      recognition.current.lang = 'hi-IN'; // Hindi language
+      recognition.current.lang = 'en-US'; // English language
       recognition.current.continuous = false;
       recognition.current.interimResults = false;
       recognition.current.maxAlternatives = 1;

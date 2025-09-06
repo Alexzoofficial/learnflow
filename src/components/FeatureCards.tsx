@@ -12,7 +12,7 @@ const features = [
   {
     icon: Languages,
     title: 'Language Support',
-    description: 'Understands questions in English and Hindi.',
+    description: 'Understands questions in English and supports multilingual input.',
     gradient: 'from-green-500 to-green-600'
   },
   {

@@ -36,7 +36,7 @@ export const AboutPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Educational Excellence</h3>
                   <p className="text-muted-foreground">
-                    Ask questions in plain English or Hindi and receive detailed, step-by-step explanations that help you understand the 'how' and 'why' behind every answer.
+                    Ask questions in plain English and receive detailed, step-by-step explanations that help you understand the 'how' and 'why' behind every answer.
                   </p>
                 </div>
               </div>
@@ -62,7 +62,7 @@ export const AboutPage: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-semibold mb-2">Multi-Subject Coverage</h3>
                   <p className="text-muted-foreground">
-                    Explore topics in Mathematics, Physics, Chemistry, Biology, English, Hindi, and more with our comprehensive subject support.
+                    Explore topics in Mathematics, Physics, Chemistry, Biology, English, and more with our comprehensive subject support.
                   </p>
                 </div>
               </div>
@@ -90,7 +90,7 @@ export const AboutPage: React.FC = () => {
             <ul className="space-y-3">
               <li className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span>Ask questions in plain English or Hindi</span>
+                <span>Ask questions in plain English</span>
               </li>
               <li className="flex items-center space-x-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
