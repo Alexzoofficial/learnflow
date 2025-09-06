@@ -9,7 +9,6 @@ interface SubjectTabsProps {
 
 const subjects = [
   { id: 'general', label: 'General', emoji: '🌐' },
-  { id: 'hindi', label: 'Hindi', emoji: '🇮🇳' },
   { id: 'english', label: 'English', emoji: '🇬🇧' },
   { id: 'math', label: 'Math', emoji: '🔢' },
   { id: 'physics', label: 'Physics', emoji: '⚛️' },
