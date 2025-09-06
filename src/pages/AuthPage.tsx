@@ -79,13 +79,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
     
     try {
       if (isForgotPassword) {
-        // Send 6-digit OTP for password reset
-        const { error } = await supabase.auth.signInWithOtp({
-          email,
-          options: {
-            shouldCreateUser: false,
-            data: {}
-          }
+        // Send OTP for password reset
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth-callback`,
         });
         
         if (error) throw error;
