@@ -5,7 +5,6 @@ import { ResultCard } from '@/components/ResultCard';
 import { FeatureCards } from '@/components/FeatureCards';
 import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
 
@@ -76,15 +75,22 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
 
       console.log('Sending request to AI:', requestData);
 
-      // Call Supabase edge function
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: requestData
+      // Call Supabase edge function via HTTP
+      const response = await fetch('https://gfjebdptkhzoyzoxzbnn.supabase.co/functions/v1/ai-chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdmamViZHB0a2h6b3l6b3h6Ym5uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MTA5MDgsImV4cCI6MjA3MjI4NjkwOH0.b4NPIVez9whCi-XP9rZ0Zf24JSg9e1jYLSJ4D5hF7_Y`
+        },
+        body: JSON.stringify(requestData)
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(errorData.message || 'Failed to get response');
       }
+
+      const data = await response.json();
 
       console.log('AI response received:', data);
       setResult(data.text);

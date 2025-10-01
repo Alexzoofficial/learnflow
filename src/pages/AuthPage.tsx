@@ -4,9 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/integrations/firebase/client';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  confirmPasswordReset,
+  onAuthStateChanged,
+  User
+} from 'firebase/auth';
 import { Mail, ArrowLeft, X, Lock } from 'lucide-react';
-import type { User } from '@supabase/supabase-js';
 
 interface AuthPageProps {
   onAuthSuccess: (user: User) => void;
@@ -27,22 +34,13 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
 
   useEffect(() => {
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (session?.user) {
-          onAuthSuccess(session.user);
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        onAuthSuccess(session.user);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        onAuthSuccess(user);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [onAuthSuccess]);
 
   const handleEmailAuth = async () => {
@@ -79,41 +77,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
     
     try {
       if (isForgotPassword) {
-        // Send OTP for password reset
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth-callback`,
-        });
-        
-        if (error) throw error;
+        // Send password reset email
+        await sendPasswordResetEmail(auth, email);
         
         setIsOtpSent(true);
         toast({
           title: "Success",
-          description: "6-digit code sent to your email! Valid for 15 minutes.",
+          description: "Password reset email sent! Check your inbox.",
         });
       } else if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {}
-          }
-        });
-        
-        if (error) throw error;
+        await createUserWithEmailAndPassword(auth, email, password);
         
         toast({
           title: "Success", 
           description: "Account created successfully! You are now logged in.",
         });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
+        await signInWithEmailAndPassword(auth, email, password);
         
         toast({
           title: "Success", 
@@ -121,9 +101,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
         });
       }
     } catch (error: any) {
+      let errorMessage = "Authentication failed";
+      
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "Email already in use";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "Password should be at least 6 characters";
+      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        errorMessage = "Invalid email or password";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "Invalid email address";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error",
-        description: error.message || "Authentication failed",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -132,83 +126,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
   };
 
   const handleOtpVerify = async () => {
-    if (!otp || otp.length !== 6) {
-      toast({
-        title: "Error",
-        description: "Please enter the 6-digit code",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
+    toast({
+      title: "Info",
+      description: "Please check your email and click the password reset link.",
+    });
     
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email,
-        token: otp,
-        type: 'email'
-      });
-      
-      if (error) throw error;
-      
-      setIsResetPassword(true);
-      setIsOtpSent(false);
-      toast({
-        title: "Success",
-        description: "Code verified! Please enter your new password.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Invalid or expired code",
-        variant: "destructive",
-      });
-    }
-
-    setLoading(false);
+    setIsForgotPassword(false);
+    setIsOtpSent(false);
+    setEmail('');
   };
 
   const handlePasswordReset = async () => {
-    if (!newPassword || newPassword.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    
-    try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Password updated successfully!",
-      });
-      
-      // Reset all states
-      setIsForgotPassword(false);
-      setIsOtpSent(false);
-      setIsResetPassword(false);
-      setEmail('');
-      setNewPassword('');
-      setOtp('');
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update password",
-        variant: "destructive",
-      });
-    }
-
-    setLoading(false);
+    toast({
+      title: "Info",
+      description: "Password reset is handled via email link in Firebase",
+    });
   };
 
   // Removed guest login and social login for security - all users must authenticate with email
@@ -228,26 +160,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
             </Button>
           )}
           <CardTitle className="text-2xl font-bold">
-            {isResetPassword ? 'Set New Password' : 
-             isOtpSent ? 'Enter Verification Code' :
+            {isOtpSent ? 'Check Your Email' :
              isForgotPassword ? 'Reset Password' : 'Welcome to LearnFlow'}
           </CardTitle>
           <p className="text-muted-foreground mt-2">
-            {isResetPassword ? 'Enter your new password' :
-             isOtpSent ? 'Enter the 6-digit code sent to your email' :
+            {isOtpSent ? 'A password reset link has been sent to your email' :
              isForgotPassword ? 'Enter your email to reset password' : 'Your AI-powered education assistant'}
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(isForgotPassword || isOtpSent || isResetPassword) && (
+          {(isForgotPassword || isOtpSent) && (
             <Button
               onClick={() => {
                 setIsForgotPassword(false);
                 setIsOtpSent(false);
-                setIsResetPassword(false);
                 setEmail('');
-                setOtp('');
-                setNewPassword('');
               }}
               variant="ghost"
               className="w-full justify-start p-0 h-auto"
@@ -257,63 +184,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
             </Button>
           )}
           
-          {isResetPassword ? (
-            <div className="space-y-3">
-              <Input
-                type="password"
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full"
-              />
-              
-              <Button
-                onClick={handlePasswordReset}
-                disabled={loading}
-                variant="default"
-                className="w-full"
-              >
-                <Lock className="w-4 h-4 mr-2" />
-                {loading ? 'Updating...' : 'Update Password'}
-              </Button>
-            </div>
-          ) : isOtpSent ? (
+          {isOtpSent ? (
             <div className="space-y-3">
               <div className="flex flex-col items-center space-y-4">
                 <p className="text-sm text-muted-foreground text-center">
-                  Enter the 6-digit code sent to {email}
+                  A password reset link has been sent to {email}. Please check your email and click the link to reset your password.
                 </p>
-                <div className="flex justify-center w-full">
-                  <InputOTP
-                    maxLength={6}
-                    value={otp}
-                    onChange={(value) => setOtp(value)}
-                  >
-                    <InputOTPGroup className="gap-2">
-                      <InputOTPSlot index={0} />
-                      <InputOTPSlot index={1} />
-                      <InputOTPSlot index={2} />
-                      <InputOTPSlot index={3} />
-                      <InputOTPSlot index={4} />
-                      <InputOTPSlot index={5} />
-                    </InputOTPGroup>
-                  </InputOTP>
-                </div>
               </div>
               
               <Button
                 onClick={handleOtpVerify}
-                disabled={loading || otp.length !== 6}
                 variant="default"
                 className="w-full"
               >
-                <Lock className="w-4 h-4 mr-2" />
-                {loading ? 'Verifying...' : 'Verify Code'}
+                OK
               </Button>
-              
-              <p className="text-xs text-center text-muted-foreground">
-                Code expires in 15 minutes
-              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -344,7 +229,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
               >
                 <Mail className="w-4 h-4 mr-2" />
                 {loading ? 'Processing...' : 
-                 isForgotPassword ? 'Send 6-Digit Code' :
+                 isForgotPassword ? 'Send Reset Link' :
                  isSignUp ? 'Sign Up with Email' : 'Login with Email'}
               </Button>
 
