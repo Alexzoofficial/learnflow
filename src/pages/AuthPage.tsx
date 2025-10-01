@@ -1,19 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/integrations/firebase/client';
 import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  confirmPasswordReset,
+  GoogleAuthProvider,
+  signInWithPopup,
   onAuthStateChanged,
   User
 } from 'firebase/auth';
-import { Mail, ArrowLeft, X, Lock } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface AuthPageProps {
   onAuthSuccess: (user: User) => void;
@@ -21,15 +17,6 @@ interface AuthPageProps {
 }
 
 export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) => {
-  const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isResetPassword, setIsResetPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -43,74 +30,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
     return () => unsubscribe();
   }, [onAuthSuccess]);
 
-  const handleEmailAuth = async () => {
-    if (!email.trim() || (!isForgotPassword && !password.trim())) {
-      toast({
-        title: "Error",
-        description: isForgotPassword ? "Please enter your email" : "Please enter both email and password",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!isForgotPassword && password.length < 6) {
-      toast({
-        title: "Error",
-        description: "Password must be at least 6 characters",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setLoading(true);
-    
+  const handleGoogleSignIn = async () => {
     try {
-      if (isForgotPassword) {
-        // Send password reset email
-        await sendPasswordResetEmail(auth, email);
-        
-        setIsOtpSent(true);
-        toast({
-          title: "Success",
-          description: "Password reset email sent! Check your inbox.",
-        });
-      } else if (isSignUp) {
-        await createUserWithEmailAndPassword(auth, email, password);
-        
-        toast({
-          title: "Success", 
-          description: "Account created successfully! You are now logged in.",
-        });
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-        
-        toast({
-          title: "Success", 
-          description: "Logged in successfully!",
-        });
-      }
-    } catch (error: any) {
-      let errorMessage = "Authentication failed";
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       
-      if (error.code === 'auth/email-already-in-use') {
-        errorMessage = "Email already in use";
-      } else if (error.code === 'auth/weak-password') {
-        errorMessage = "Password should be at least 6 characters";
-      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = "Invalid email or password";
-      } else if (error.code === 'auth/invalid-email') {
-        errorMessage = "Invalid email address";
+      toast({
+        title: "Success",
+        description: "Signed in with Google successfully!",
+      });
+    } catch (error: any) {
+      let errorMessage = "Failed to sign in with Google";
+      
+      if (error.code === 'auth/popup-closed-by-user') {
+        errorMessage = "Sign-in popup was closed";
+      } else if (error.code === 'auth/popup-blocked') {
+        errorMessage = "Sign-in popup was blocked by your browser";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -121,29 +56,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
         variant: "destructive",
       });
     }
-
-    setLoading(false);
   };
-
-  const handleOtpVerify = async () => {
-    toast({
-      title: "Info",
-      description: "Please check your email and click the password reset link.",
-    });
-    
-    setIsForgotPassword(false);
-    setIsOtpSent(false);
-    setEmail('');
-  };
-
-  const handlePasswordReset = async () => {
-    toast({
-      title: "Info",
-      description: "Password reset is handled via email link in Firebase",
-    });
-  };
-
-  // Removed guest login and social login for security - all users must authenticate with email
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4">
@@ -160,101 +73,38 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
             </Button>
           )}
           <CardTitle className="text-2xl font-bold">
-            {isOtpSent ? 'Check Your Email' :
-             isForgotPassword ? 'Reset Password' : 'Welcome to LearnFlow'}
+            Welcome to LearnFlow
           </CardTitle>
           <p className="text-muted-foreground mt-2">
-            {isOtpSent ? 'A password reset link has been sent to your email' :
-             isForgotPassword ? 'Enter your email to reset password' : 'Your AI-powered education assistant'}
+            Your AI-powered education assistant
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {(isForgotPassword || isOtpSent) && (
-            <Button
-              onClick={() => {
-                setIsForgotPassword(false);
-                setIsOtpSent(false);
-                setEmail('');
-              }}
-              variant="ghost"
-              className="w-full justify-start p-0 h-auto"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Login
-            </Button>
-          )}
-          
-          {isOtpSent ? (
-            <div className="space-y-3">
-              <div className="flex flex-col items-center space-y-4">
-                <p className="text-sm text-muted-foreground text-center">
-                  A password reset link has been sent to {email}. Please check your email and click the link to reset your password.
-                </p>
-              </div>
-              
-              <Button
-                onClick={handleOtpVerify}
-                variant="default"
-                className="w-full"
-              >
-                OK
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full"
-                disabled={isOtpSent}
+          <Button
+            onClick={handleGoogleSignIn}
+            variant="default"
+            className="w-full flex items-center justify-center gap-3 py-6"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
               />
-              
-              {!isForgotPassword && (
-                <Input
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full"
-                />
-              )}
-              
-              <Button
-                onClick={handleEmailAuth}
-                disabled={loading}
-                variant="default"
-                className="w-full"
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                {loading ? 'Processing...' : 
-                 isForgotPassword ? 'Send Reset Link' :
-                 isSignUp ? 'Sign Up with Email' : 'Login with Email'}
-              </Button>
-
-              {!isForgotPassword && (
-                <>
-                  <button
-                    onClick={() => setIsSignUp(!isSignUp)}
-                    className="w-full text-sm text-primary hover:underline"
-                  >
-                    {isSignUp ? 'Already have an account? Login' : 'Need an account? Sign up'}
-                  </button>
-                  
-                  {!isSignUp && (
-                    <button
-                      onClick={() => setIsForgotPassword(true)}
-                      className="w-full text-sm text-muted-foreground hover:text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
-          )}
-
+              <path
+                fill="currentColor"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="currentColor"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Sign in with Google
+          </Button>
 
           <p className="text-xs text-center text-muted-foreground mt-4">
             Your data is protected with us. Contact: alexzomail@proton.me
