@@ -1,7 +1,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.a24500fe81f240318b21b5d9f5fae0c8',
+  appId: 'com.alexzo.learnflow',
   appName: 'LearnFlow',
   webDir: 'dist',
   server: {
