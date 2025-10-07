@@ -4,7 +4,27 @@ import cors from 'cors';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS configuration - restrict to specific origins
+const allowedOrigins = [
+  'https://alexzo.vercel.app',
+  'http://localhost:5000',
+  'http://localhost:8080'
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json({ limit: '10mb' }));
 
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
@@ -26,17 +46,79 @@ function getRateLimit(ip: string): boolean {
   return true;
 }
 
-function sanitizeInput(input: string): string {
+function sanitizeInput(input: string, maxLength: number = 500): string {
   if (typeof input !== 'string') {
     throw new Error('Invalid input type');
   }
   
-  return input
+  // Validate length BEFORE processing to prevent ReDoS attacks
+  if (input.length > maxLength * 2) {
+    throw new Error('Input too long');
+  }
+  
+  // Truncate early
+  const truncated = input.slice(0, maxLength);
+  
+  // Then sanitize
+  return truncated
     .replace(/[<>]/g, '')
     .replace(/javascript:/gi, '')
     .replace(/on\w+=/gi, '')
-    .trim()
-    .slice(0, 1000);
+    .trim();
+}
+
+function validateUrl(urlString: string): string {
+  try {
+    const url = new URL(urlString);
+    
+    // Only allow http and https protocols
+    if (!['http:', 'https:'].includes(url.protocol)) {
+      throw new Error('Invalid protocol');
+    }
+    
+    // Block private IP ranges and localhost
+    const hostname = url.hostname.toLowerCase();
+    if (hostname === 'localhost' || 
+        hostname.startsWith('127.') ||
+        hostname.startsWith('10.') ||
+        hostname.startsWith('192.168.') ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+        hostname === '169.254.169.254') {
+      throw new Error('Private IP addresses not allowed');
+    }
+    
+    // Length limit
+    if (url.href.length > 2048) {
+      throw new Error('URL too long');
+    }
+    
+    return url.href;
+  } catch (error) {
+    throw new Error('Invalid URL');
+  }
+}
+
+function validateBase64Image(base64String: string, maxSizeBytes: number = 10 * 1024 * 1024): string {
+  if (!base64String || typeof base64String !== 'string') {
+    throw new Error('Invalid image data');
+  }
+  
+  // Remove data URI prefix if present
+  const base64Data = base64String.split(',')[1] || base64String;
+  
+  // Calculate actual size (base64 encoding increases size by ~33%)
+  const sizeBytes = (base64Data.length * 3) / 4;
+  
+  if (sizeBytes > maxSizeBytes) {
+    throw new Error(`Image too large. Max size: ${maxSizeBytes / 1024 / 1024}MB`);
+  }
+  
+  // Validate base64 format
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(base64Data)) {
+    throw new Error('Invalid base64 format');
+  }
+  
+  return base64Data;
 }
 
 async function generateAIResponse(prompt: string, image?: string, linkUrl?: string): Promise<string> {
@@ -44,8 +126,7 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
     const googleAIApiKey = process.env.GOOGLE_AI_API_KEY;
     
     if (!googleAIApiKey) {
-      console.log('Google AI API key not found, using fallback response');
-      return generateFallbackResponse(prompt);
+      throw new Error('Google AI API key not configured');
     }
 
     const requestBody: any = {
@@ -65,13 +146,10 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
     let fullPrompt = `You are an educational AI assistant. Please provide a helpful, accurate, and concise answer to this question: ${prompt}`;
     
     if (image) {
-      console.log('Processing image with AI request');
       fullPrompt += '\n\nPlease analyze the provided image and incorporate it into your response.';
       
-      let base64Data = image;
-      if (image.startsWith('data:')) {
-        base64Data = image.split(',')[1];
-      }
+      // Validate image data
+      const base64Data = validateBase64Image(image);
       
       requestBody.contents[0].parts.push({
         text: fullPrompt
@@ -90,8 +168,9 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
     }
     
     if (linkUrl) {
-      console.log('Processing link URL:', linkUrl);
-      requestBody.contents[0].parts[0].text += `\n\nAdditionally, please analyze this link: ${linkUrl}`;
+      // Validate URL to prevent SSRF attacks
+      const validatedUrl = validateUrl(linkUrl);
+      requestBody.contents[0].parts[0].text += `\n\nAdditionally, please analyze this link: ${validatedUrl}`;
     }
 
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${googleAIApiKey}`, {
@@ -103,10 +182,7 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
     });
 
     if (!response.ok) {
-      console.error('Google AI API error:', response.status, response.statusText);
-      const errorText = await response.text();
-      console.error('Error details:', errorText);
-      return generateFallbackResponse(prompt);
+      throw new Error(`AI API error: ${response.status}`);
     }
 
     const data = await response.json();
@@ -114,12 +190,14 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
       return data.candidates[0].content.parts[0].text;
     } else {
-      console.error('Unexpected Google AI API response structure:', data);
-      return generateFallbackResponse(prompt);
+      throw new Error('Invalid AI response structure');
     }
   } catch (error) {
-    console.error('Error calling Google AI API:', error);
-    return generateFallbackResponse(prompt);
+    // Log error details server-side only
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[AI Service Error]', error instanceof Error ? error.message : 'Unknown error');
+    }
+    throw error;
   }
 }
 
@@ -209,7 +287,7 @@ app.post('/api/ai-chat', async (req, res) => {
     
     if (!prompt) {
       return res.status(400).json({
-        error: 'Missing or invalid prompt'
+        error: 'Missing required prompt parameter'
       });
     }
 
@@ -217,37 +295,40 @@ app.post('/api/ai-chat', async (req, res) => {
     
     if (sanitizedPrompt.length === 0) {
       return res.status(400).json({
-        error: 'Empty or invalid prompt after sanitization'
+        error: 'Invalid prompt content'
       });
-    }
-
-    console.log('Processing AI chat request for:', sanitizedPrompt);
-    
-    if (image) {
-      console.log('Image data received, length:', image.length);
-    }
-    
-    if (linkUrl) {
-      console.log('Link URL received:', linkUrl);
     }
 
     const aiResponse = await generateAIResponse(sanitizedPrompt, image, linkUrl);
     const videos = getRelevantVideos(sanitizedPrompt);
 
-    const response = {
+    return res.json({
       text: aiResponse,
       videos: videos
-    };
-
-    console.log('AI chat response generated successfully');
-
-    return res.json(response);
+    });
 
   } catch (error) {
-    console.error('AI chat error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    // Log error details server-side only (not in production)
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[API Error]', {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+    
+    // Return generic error to client
+    const statusCode = error instanceof Error && error.message.includes('Invalid') ? 400 : 500;
+    return res.status(statusCode).json({ 
+      error: 'An error occurred processing your request. Please try again later.' 
+    });
   }
 });
+
+// Validate critical environment variables on startup
+if (!process.env.GOOGLE_AI_API_KEY) {
+  console.error('CRITICAL: GOOGLE_AI_API_KEY environment variable not set');
+  process.exit(1);
+}
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

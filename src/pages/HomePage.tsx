@@ -62,18 +62,14 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
       
       // Convert image to base64 if provided
       if (image) {
-        console.log('Converting image to base64:', image.name, image.size);
         const base64 = await convertImageToBase64(image);
         requestData.image = base64;
-        console.log('Image converted to base64, length:', base64.length);
       }
 
       // Add link URL if provided
       if (linkUrl) {
         requestData.linkUrl = linkUrl;
       }
-
-      console.log('Sending request to AI:', requestData);
 
       // Call server API
       const response = await fetch('/api/ai-chat', {
@@ -91,7 +87,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
 
       const data = await response.json();
 
-      console.log('AI response received:', data);
       setResult(data.text);
       setVideos(data.videos || []);
       
