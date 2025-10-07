@@ -7,8 +7,8 @@ const PORT = process.env.PORT || 3000;
 // CORS configuration - restrict to specific origins
 const allowedOrigins = [
   'https://alexzo.vercel.app',
-  'http://localhost:5000',
-  'http://localhost:8080'
+  'http://localhost:8080',
+  'https://id-preview--a24500fe-81f2-4031-8b21-b5d9f5fae0c8.lovable.app'
 ];
 
 app.use(cors({
