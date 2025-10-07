@@ -1,19 +1,12 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import express from 'express';
+import cors from 'cors';
 
-const googleAIApiKey = Deno.env.get('GOOGLE_AI_API_KEY');
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Max-Age': '86400',
-  'Content-Security-Policy': "default-src 'self'",
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block'
-};
+app.use(cors());
+app.use(express.json({ limit: '10mb' }));
 
-// Rate limiting storage
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 function getRateLimit(ip: string): boolean {
@@ -21,11 +14,11 @@ function getRateLimit(ip: string): boolean {
   const limit = rateLimitMap.get(ip);
   
   if (!limit || now > limit.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 }); // 1 minute window
+    rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
     return true;
   }
   
-  if (limit.count >= 10) { // 10 requests per minute
+  if (limit.count >= 10) {
     return false;
   }
   
@@ -38,118 +31,18 @@ function sanitizeInput(input: string): string {
     throw new Error('Invalid input type');
   }
   
-  // Remove potentially dangerous characters and limit length
   return input
-    .replace(/[<>]/g, '') // Remove HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: URLs
-    .replace(/on\w+=/gi, '') // Remove event handlers
+    .replace(/[<>]/g, '')
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
     .trim()
-    .slice(0, 1000); // Limit to 1000 characters
+    .slice(0, 1000);
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
-  // Get client IP for rate limiting
-  const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
-  
-  // Check rate limit
-  if (!getRateLimit(clientIP)) {
-    return new Response(JSON.stringify({
-      error: 'Rate limit exceeded. Please try again later.'
-    }), {
-      status: 429,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
+async function generateAIResponse(prompt: string, image?: string, linkUrl?: string): Promise<string> {
   try {
-    // Validate request method
-    if (req.method !== 'POST') {
-      return new Response(JSON.stringify({
-        error: 'Method not allowed'
-      }), {
-        status: 405,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const requestBody = await req.json().catch(() => null);
+    const googleAIApiKey = process.env.GOOGLE_AI_API_KEY;
     
-    if (!requestBody || !requestBody.prompt) {
-      return new Response(JSON.stringify({
-        error: 'Missing or invalid prompt'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Sanitize input
-    const sanitizedPrompt = sanitizeInput(requestBody.prompt);
-    
-    if (sanitizedPrompt.length === 0) {
-      return new Response(JSON.stringify({
-        error: 'Empty or invalid prompt after sanitization'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('Processing AI chat request for:', sanitizedPrompt);
-    
-    // Check if image is provided
-    if (requestBody.image) {
-      console.log('Image data received, length:', requestBody.image.length);
-    }
-    
-    // Check if link URL is provided
-    if (requestBody.linkUrl) {
-      console.log('Link URL received:', requestBody.linkUrl);
-    }
-
-    // Generate AI response using Google AI API with image support
-    const aiResponse = await generateAIResponse(sanitizedPrompt, requestBody.image, requestBody.linkUrl);
-    
-    // Get relevant YouTube videos (only if relevant to the topic)
-    const videos = getRelevantVideos(sanitizedPrompt);
-
-    const response = {
-      text: aiResponse,
-      videos: videos
-    };
-
-    console.log('AI chat response generated successfully');
-
-    return new Response(
-      JSON.stringify(response),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
-    );
-
-  } catch (error) {
-    console.error('AI chat error:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  }
-});
-
-// Function to generate AI response using Google AI API
-const generateAIResponse = async (prompt: string, image?: string, linkUrl?: string): Promise<string> => {
-  try {
     if (!googleAIApiKey) {
       console.log('Google AI API key not found, using fallback response');
       return generateFallbackResponse(prompt);
@@ -169,15 +62,12 @@ const generateAIResponse = async (prompt: string, image?: string, linkUrl?: stri
       }
     };
 
-    // Add text prompt
     let fullPrompt = `You are an educational AI assistant. Please provide a helpful, accurate, and concise answer to this question: ${prompt}`;
     
-    // Handle image input
     if (image) {
       console.log('Processing image with AI request');
       fullPrompt += '\n\nPlease analyze the provided image and incorporate it into your response.';
       
-      // Extract base64 data from data URL if present
       let base64Data = image;
       if (image.startsWith('data:')) {
         base64Data = image.split(',')[1];
@@ -199,7 +89,6 @@ const generateAIResponse = async (prompt: string, image?: string, linkUrl?: stri
       });
     }
     
-    // Handle link URL
     if (linkUrl) {
       console.log('Processing link URL:', linkUrl);
       requestBody.contents[0].parts[0].text += `\n\nAdditionally, please analyze this link: ${linkUrl}`;
@@ -232,13 +121,11 @@ const generateAIResponse = async (prompt: string, image?: string, linkUrl?: stri
     console.error('Error calling Google AI API:', error);
     return generateFallbackResponse(prompt);
   }
-};
+}
 
-// Fallback function for when API is not available
-const generateFallbackResponse = (prompt: string): string => {
+function generateFallbackResponse(prompt: string): string {
   const lowerPrompt = prompt.toLowerCase();
   
-  // Math problems - direct answers only
   if (lowerPrompt.includes('2 + 2') || lowerPrompt.includes('2+2')) {
     return `**Answer: 4**`;
   }
@@ -247,35 +134,28 @@ const generateFallbackResponse = (prompt: string): string => {
     return `**${prompt}**\n\nBasic mathematical operations: addition (+), subtraction (-), multiplication (×), division (÷).`;
   }
   
-  // Science topics - concise responses
   if (lowerPrompt.includes('science') || lowerPrompt.includes('physics') || lowerPrompt.includes('chemistry') || lowerPrompt.includes('biology')) {
     return `**${prompt}**\n\nScience studies natural phenomena through observation and experimentation.`;
   }
   
-  // History topics - concise responses
   if (lowerPrompt.includes('history') || lowerPrompt.includes('historical')) {
     return `**${prompt}**\n\nHistory studies past events and their impact on the present.`;
   }
 
-  // Language and literature
   if (lowerPrompt.includes('english') || lowerPrompt.includes('language') || lowerPrompt.includes('literature')) {
     return `**${prompt}**\n\nLanguage arts covers reading, writing, speaking, and listening skills.`;
   }
 
-  // Geography
   if (lowerPrompt.includes('geography') || lowerPrompt.includes('world') || lowerPrompt.includes('countries')) {
     return `**${prompt}**\n\nGeography studies Earth's physical features and human activities.`;
   }
   
-  // Default concise educational response
   return `**${prompt}**\n\nA systematic approach to understanding this topic with practical applications.`;
-};
+}
 
-// Function to get relevant YouTube videos - only when truly relevant
-const getRelevantVideos = (prompt: string) => {
+function getRelevantVideos(prompt: string) {
   const lowerPrompt = prompt.toLowerCase();
   
-  // Math-related videos - only for specific math topics
   if (lowerPrompt.includes('addition') || lowerPrompt.includes('2 + 2') || lowerPrompt.includes('basic math')) {
     return [
       {
@@ -288,7 +168,6 @@ const getRelevantVideos = (prompt: string) => {
     ];
   }
   
-  // Science videos - only for general science topics
   if (lowerPrompt.includes('science experiment') || lowerPrompt.includes('physics demo') || lowerPrompt.includes('chemistry lab')) {
     return [
       {
@@ -301,7 +180,6 @@ const getRelevantVideos = (prompt: string) => {
     ];
   }
   
-  // History videos - only for specific historical topics
   if (lowerPrompt.includes('world war') || lowerPrompt.includes('ancient') || lowerPrompt.includes('civilization')) {
     return [
       {
@@ -314,6 +192,63 @@ const getRelevantVideos = (prompt: string) => {
     ];
   }
   
-  // Return empty array if no relevant videos found
   return [];
-};
+}
+
+app.post('/api/ai-chat', async (req, res) => {
+  const clientIP = req.ip || req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || 'unknown';
+  
+  if (!getRateLimit(clientIP as string)) {
+    return res.status(429).json({
+      error: 'Rate limit exceeded. Please try again later.'
+    });
+  }
+
+  try {
+    const { prompt, image, linkUrl } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({
+        error: 'Missing or invalid prompt'
+      });
+    }
+
+    const sanitizedPrompt = sanitizeInput(prompt);
+    
+    if (sanitizedPrompt.length === 0) {
+      return res.status(400).json({
+        error: 'Empty or invalid prompt after sanitization'
+      });
+    }
+
+    console.log('Processing AI chat request for:', sanitizedPrompt);
+    
+    if (image) {
+      console.log('Image data received, length:', image.length);
+    }
+    
+    if (linkUrl) {
+      console.log('Link URL received:', linkUrl);
+    }
+
+    const aiResponse = await generateAIResponse(sanitizedPrompt, image, linkUrl);
+    const videos = getRelevantVideos(sanitizedPrompt);
+
+    const response = {
+      text: aiResponse,
+      videos: videos
+    };
+
+    console.log('AI chat response generated successfully');
+
+    return res.json(response);
+
+  } catch (error) {
+    console.error('AI chat error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
