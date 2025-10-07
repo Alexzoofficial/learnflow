@@ -52,6 +52,9 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setVideos([]);
 
     try {
+      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
+      console.log('Starting AI request...');
+      
       let base64Image: string | undefined;
       if (image) {
         base64Image = await convertImageToBase64(image);
@@ -65,8 +68,11 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
         }
       });
 
+      console.log('Function response:', { data, functionError });
+
       if (functionError) {
-        throw functionError;
+        console.error('Function error details:', functionError);
+        throw new Error(functionError.message || 'Edge function failed. Please wait a moment and try again.');
       }
 
       if (data?.error) {
@@ -80,8 +86,15 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
         incrementRequest();
       }
     } catch (err) {
-      console.error("Error:", err);
-      const errorMessage = err instanceof Error ? err.message : "Request failed";
+      console.error("Full error object:", err);
+      let errorMessage = "Request failed. ";
+      
+      if (err instanceof Error) {
+        errorMessage += err.message;
+      } else {
+        errorMessage += "Please check your internet connection and try again.";
+      }
+      
       setError(errorMessage);
       toast({
         title: "Error",
