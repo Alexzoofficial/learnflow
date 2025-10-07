@@ -7,6 +7,7 @@ import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface YouTubeVideo {
   id: string;
@@ -31,71 +32,56 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
   const handleQuestionSubmit = async (question: string, image?: File, linkUrl?: string) => {
-    // Check request limit for unauthenticated users
+    if (!question.trim() && !image) return;
+
     if (!user && isLimitReached) {
       toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily limit. Please sign in to continue.",
+        title: "Daily limit reached",
+        description: "You've reached your daily limit of 5 requests. Please sign in for unlimited access.",
         variant: "destructive",
       });
-      onShowAuth?.();
-      return;
-    }
-
-    // For unauthenticated users, check if they can make a request
-    if (!user && !incrementRequest()) {
-      toast({
-        title: "Daily Limit Reached",
-        description: "You've reached your daily limit of 5 requests. Please sign in to continue.",
-        variant: "destructive",
-      });
-      onShowAuth?.();
+      if (onShowAuth) {
+        onShowAuth();
+      }
       return;
     }
 
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setVideos([]);
 
     try {
-      let requestData: any = { prompt: question };
-      
-      // Convert image to base64 if provided
+      let base64Image: string | undefined;
       if (image) {
-        const base64 = await convertImageToBase64(image);
-        requestData.image = base64;
+        base64Image = await convertImageToBase64(image);
       }
 
-      // Add link URL if provided
-      if (linkUrl) {
-        requestData.linkUrl = linkUrl;
-      }
-
-      // Call server API
-      const response = await fetch('/api/ai-chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
+      const { data, error: functionError } = await supabase.functions.invoke('ai-chat', {
+        body: { 
+          prompt: question,
+          image: base64Image,
+          linkUrl: linkUrl
+        }
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
-        throw new Error(errorData.message || 'Failed to get response');
+      if (functionError) {
+        throw functionError;
       }
 
-      const data = await response.json();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setResult(data.text);
       setVideos(data.videos || []);
-      
-      toast({
-        title: "Answer Generated!",
-        description: "AI has provided a detailed response to your question.",
-      });
+
+      if (!user) {
+        incrementRequest();
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to get response. Please try again.';
+      console.error("Error:", err);
+      const errorMessage = err instanceof Error ? err.message : "Request failed";
       setError(errorMessage);
       toast({
         title: "Error",
