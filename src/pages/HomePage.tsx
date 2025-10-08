@@ -52,9 +52,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setVideos([]);
 
     try {
-      console.log('Supabase URL:', import.meta.env.VITE_SUPABASE_URL);
-      console.log('Starting AI request...');
-      
       let base64Image: string | undefined;
       if (image) {
         base64Image = await convertImageToBase64(image);
