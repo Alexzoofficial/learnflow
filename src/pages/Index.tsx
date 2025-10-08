@@ -8,8 +8,8 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
-import { auth } from '@/integrations/firebase/client';
-import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
@@ -27,17 +27,24 @@ const Index = () => {
 
   // Initialize auth state
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
       setLoading(false);
       
-      if (user) {
+      if (session?.user) {
         setActivePage('home');
         setShowAuthModal(false);
       }
     });
 
-    return () => unsubscribe();
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -58,7 +65,9 @@ const Index = () => {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       setUser(null);
       setActivePage('home');
       toast({
@@ -68,7 +77,7 @@ const Index = () => {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || "Failed to log out",
         variant: "destructive",
       });
     }

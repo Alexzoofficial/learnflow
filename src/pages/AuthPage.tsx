@@ -2,13 +2,8 @@ import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/integrations/firebase/client';
-import { 
-  GoogleAuthProvider,
-  signInWithPopup,
-  onAuthStateChanged,
-  User
-} from 'firebase/auth';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 import { X } from 'lucide-react';
 
 interface AuthPageProps {
@@ -21,19 +16,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
 
   useEffect(() => {
     // Listen for auth changes
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        onAuthSuccess(user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        onAuthSuccess(session.user);
       }
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, [onAuthSuccess]);
 
   const handleGoogleSignIn = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        }
+      });
+      
+      if (error) throw error;
       
       toast({
         title: "Success",
@@ -42,11 +43,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
     } catch (error: any) {
       let errorMessage = "Failed to sign in with Google";
       
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = "Sign-in popup was closed";
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = "Sign-in popup was blocked by your browser";
-      } else if (error.message) {
+      if (error.message) {
         errorMessage = error.message;
       }
       
