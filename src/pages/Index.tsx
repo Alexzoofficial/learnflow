@@ -8,8 +8,8 @@ import { DisclaimerPage } from '@/pages/DisclaimerPage';
 import { AuthPage } from '@/pages/AuthPage';
 import { ProfileMenu } from '@/components/ProfileMenu';
 
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { auth } from '@/integrations/firebase/client';
+import { User } from 'firebase/auth';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 
 import { ExternalLink, User as UserIcon } from 'lucide-react';
@@ -27,24 +27,17 @@ const Index = () => {
 
   // Initialize auth state
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
       setLoading(false);
       
-      if (session?.user) {
+      if (user) {
         setActivePage('home');
         setShowAuthModal(false);
       }
     });
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -65,8 +58,7 @@ const Index = () => {
 
   const handleLogout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await auth.signOut();
       
       setUser(null);
       setActivePage('home');

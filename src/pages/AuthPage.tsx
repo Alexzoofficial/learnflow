@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from '@supabase/supabase-js';
+import { auth } from '@/integrations/firebase/client';
+import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
 import { X } from 'lucide-react';
 
 interface AuthPageProps {
@@ -16,25 +16,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
 
   useEffect(() => {
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        onAuthSuccess(session.user);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        onAuthSuccess(user);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, [onAuthSuccess]);
 
   const handleGoogleSignIn = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`,
-        }
-      });
-      
-      if (error) throw error;
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
       
       toast({
         title: "Success",

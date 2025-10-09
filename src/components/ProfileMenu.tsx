@@ -18,7 +18,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { auth } from '@/integrations/firebase/client';
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { LogOut, KeyRound } from 'lucide-react';
 
 interface ProfileMenuProps {
@@ -43,7 +44,7 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
       .slice(0, 2);
   };
 
-  const displayNameToShow = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayNameToShow = user?.displayName || user?.email?.split('@')[0] || 'User';
 
   const handlePasswordChange = async () => {
     if (!newPassword || newPassword.length < 6) {
@@ -67,11 +68,10 @@ export const ProfileMenu: React.FC<ProfileMenuProps> = ({ user, onLogout }) => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("No user logged in");
       
-      if (error) throw error;
+      await updatePassword(currentUser, newPassword);
       
       toast({
         title: "Success",
