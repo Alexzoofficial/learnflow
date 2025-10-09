@@ -3,19 +3,10 @@ import { SubjectTabs } from '@/components/SubjectTabs';
 import { QuestionInput } from '@/components/QuestionInput';
 import { ResultCard } from '@/components/ResultCard';
 import { FeatureCards } from '@/components/FeatureCards';
-import { YouTubeVideos } from '@/components/YouTubeVideos';
 import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-
-interface YouTubeVideo {
-  id: string;
-  title: string;
-  thumbnail: string;
-  url: string;
-  embed: string;
-}
 
 interface HomePageProps {
   user?: any;
@@ -27,7 +18,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
@@ -49,7 +39,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
-    setVideos([]);
 
     try {
       const genAI = new GoogleGenerativeAI('AIzaSyBN9rzTOIehj61eTZSUretqteyvniuMYdg');
@@ -74,11 +63,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
       const text = response.text();
 
       setResult(text);
-      
-      // Search YouTube videos
-      const searchQuery = encodeURIComponent(question.substring(0, 50));
-      const youtubeVideos = await searchYouTubeVideos(searchQuery);
-      setVideos(youtubeVideos);
 
       if (!user) {
         incrementRequest();
@@ -114,29 +98,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  };
-
-  const searchYouTubeVideos = async (query: string): Promise<YouTubeVideo[]> => {
-    try {
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=3&q=${query}&type=video&key=AIzaSyBN9rzTOIehj61eTZSUretqteyvniuMYdg`
-      );
-      const data = await response.json();
-      
-      if (data.items) {
-        return data.items.map((item: any) => ({
-          id: item.id.videoId,
-          title: item.snippet.title,
-          thumbnail: item.snippet.thumbnails.medium.url,
-          url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-          embed: `https://www.youtube.com/embed/${item.id.videoId}`
-        }));
-      }
-      return [];
-    } catch (error) {
-      console.error('YouTube search error:', error);
-      return [];
-    }
   };
 
   return (
@@ -175,13 +136,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
           error={error} 
         />
       </div>
-      
-      {/* YouTube Videos - Mobile Grid */}
-      {videos.length > 0 && (
-        <div className="w-full">
-          <YouTubeVideos videos={videos} />
-        </div>
-      )}
       
       {/* Feature Cards - Mobile Responsive Grid */}
       <div className="w-full">
