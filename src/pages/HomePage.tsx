@@ -42,7 +42,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
 
     try {
       const genAI = new GoogleGenerativeAI('AIzaSyBN9rzTOIehj61eTZSUretqteyvniuMYdg');
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
 
       let prompt = question;
       const parts: any[] = [{ text: prompt }];
