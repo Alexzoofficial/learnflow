@@ -11,7 +11,8 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "package:apk": "npm run build && cd dist && zip -r ../learnflow-apk.zip . && cd .. && echo 'APK package created: learnflow-apk.zip'"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
