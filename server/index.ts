@@ -326,8 +326,7 @@ app.post('/api/ai-chat', async (req, res) => {
 
 // Validate critical environment variables on startup
 if (!process.env.GOOGLE_AI_API_KEY) {
-  console.error('CRITICAL: GOOGLE_AI_API_KEY environment variable not set');
-  process.exit(1);
+  console.warn('WARNING: GOOGLE_AI_API_KEY environment variable not set. Using fallback responses.');
 }
 
 app.listen(PORT, () => {
