@@ -5,6 +5,7 @@ LearnFlow is an educational web application that provides AI-powered learning as
 
 ## Recent Changes (October 12, 2025)
 - **Migration to Replit Environment**: Successfully migrated from external hosting to Replit
+- **APK Packaging Solution**: Created `npm run package:apk` script to properly package the app for webintoapp.com conversion (fixes "index.html not found" error permanently)
 - **Database Setup**: Configured Neon Postgres database with user profiles table
 - **Vite Configuration**: Updated to support Replit's iframe-based preview (port 5000, WebSocket settings)
 - **TypeScript Configuration**: Added server-side TypeScript support with tsconfig.server.json
@@ -72,7 +73,11 @@ LearnFlow is an educational web application that provides AI-powered learning as
 1. **Start Development Server**: `npm run dev`
    - Runs Express server on port 3000
    - Runs Vite dev server on port 5000
-2. **Database Operations**:
+2. **Package for APK Conversion**: `npm run package:apk`
+   - Builds the production app
+   - Creates `learnflow-apk.zip` with index.html at root
+   - Ready to upload to webintoapp.com
+3. **Database Operations**:
    - Push schema: `npm run db:push`
    - Generate migrations: `drizzle-kit generate`
 
