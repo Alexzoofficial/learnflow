@@ -185,7 +185,7 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
       return data.candidates[0].content.parts[0].text;
