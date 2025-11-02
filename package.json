@@ -11,10 +11,13 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "db:push": "drizzle-kit push",
-    "package:apk": "npm run build && cd dist && zip -r ../learnflow-apk.zip . && cd .. && echo 'APK package created: learnflow-apk.zip'"
+    "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/cli": "^7.4.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/ios": "^7.4.2",
     "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.9.0",
     "@neondatabase/serverless": "^1.0.2",

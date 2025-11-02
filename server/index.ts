@@ -185,7 +185,7 @@ async function generateAIResponse(prompt: string, image?: string, linkUrl?: stri
       throw new Error(`AI API error: ${response.status}`);
     }
 
-    const data: any = await response.json();
+    const data = await response.json();
     
     if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) {
       return data.candidates[0].content.parts[0].text;
@@ -326,7 +326,8 @@ app.post('/api/ai-chat', async (req, res) => {
 
 // Validate critical environment variables on startup
 if (!process.env.GOOGLE_AI_API_KEY) {
-  console.warn('WARNING: GOOGLE_AI_API_KEY environment variable not set. Using fallback responses.');
+  console.error('CRITICAL: GOOGLE_AI_API_KEY environment variable not set');
+  process.exit(1);
 }
 
 app.listen(PORT, () => {
