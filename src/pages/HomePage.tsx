@@ -6,7 +6,7 @@ import { FeatureCards } from '@/components/FeatureCards';
 import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+// Removed Google AI - using pollinations.ai instead
 
 interface HomePageProps {
   user?: any;
@@ -41,27 +41,59 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setResult(null);
 
     try {
-      const genAI = new GoogleGenerativeAI('AIzaSyBN9rzTOIehj61eTZSUretqteyvniuMYdg');
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
+      // System prompt for education-focused AI assistant
+      const systemPrompt = `You are an expert educational AI tutor for LearnFlow. Your role is to:
+- Provide clear, accurate, and detailed explanations for academic subjects
+- Break down complex concepts into easy-to-understand steps
+- Adapt your teaching style to the student's level (K-12, undergraduate, graduate)
+- Encourage critical thinking and problem-solving
+- Provide examples and practice problems when appropriate
+- Be patient, encouraging, and supportive
+- Focus on subjects like Mathematics, Science, History, Literature, and more
+- When explaining math or science, show step-by-step solutions
+- For coding questions, provide clear code examples with explanations
 
-      let prompt = question;
-      const parts: any[] = [{ text: prompt }];
+Keep responses concise but comprehensive. Always prioritize student understanding.`;
 
-      if (image) {
-        const base64Image = await convertImageToBase64(image);
-        const base64Data = base64Image.split(',')[1];
-        parts.push({
-          inlineData: {
-            data: base64Data,
-            mimeType: image.type
-          }
-        });
+      // Prepare the prompt with system context and subject context
+      let fullPrompt = `${systemPrompt}\n\nSubject Context: ${activeSubject}\n\nStudent Question: ${question}`;
+      
+      if (linkUrl) {
+        fullPrompt += `\n\nReference URL: ${linkUrl}`;
       }
 
-      const result = await model.generateContent(parts);
-      const response = await result.response;
-      const text = response.text();
+      // Handle image if provided
+      let imageBase64 = '';
+      if (image) {
+        imageBase64 = await convertImageToBase64(image);
+      }
 
+      // Call pollinations.ai API (free, no API key needed)
+      const response = await fetch('https://text.pollinations.ai/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'user',
+              content: imageBase64 
+                ? `${fullPrompt}\n\n[Image provided for analysis]`
+                : fullPrompt
+            }
+          ],
+          model: 'openai',
+          seed: Math.floor(Math.random() * 1000000),
+          jsonMode: false
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const text = await response.text();
       setResult(text);
 
       if (!user) {
