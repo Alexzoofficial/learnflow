@@ -83,7 +83,7 @@ Keep responses concise but comprehensive. Always prioritize student understandin
                 : fullPrompt
             }
           ],
-          model: 'openai/gpt-5-nano',
+          model: 'gpt-5-nano',
           seed: Math.floor(Math.random() * 1000000),
           jsonMode: false
         }),
