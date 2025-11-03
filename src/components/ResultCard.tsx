@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lightbulb, Loader2, Volume2, VolumeX } from 'lucide-react';
+import { Lightbulb, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useToast } from '@/hooks/use-toast';
 
 interface ResultCardProps {
   isLoading: boolean;
@@ -14,6 +15,8 @@ interface ResultCardProps {
 export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const getCleanTextForSpeech = (text: string) => {
     return text
@@ -63,7 +66,6 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
     if (!result) return;
 
     if (isPlaying) {
-      // Stop speech
       speechSynthesis.cancel();
       setIsPlaying(false);
       setSpeech(null);
@@ -71,19 +73,28 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
       startSpeech();
     }
   };
+
+  const handleCopy = async () => {
+    if (!result) return;
+    
+    try {
+      await navigator.clipboard.writeText(result);
+      setCopied(true);
+      toast({
+        title: "Copied!",
+        description: "Response copied to clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast({
+        title: "Failed to copy",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading) {
-    return (
-      <Card className="shadow-medium border-0">
-        <CardContent className="p-4 sm:p-8">
-          <div className="flex flex-col items-center justify-center text-center space-y-3 sm:space-y-4">
-            <Loader2 className="h-8 w-8 sm:h-10 sm:w-10 animate-spin text-primary" />
-            <p className="text-base sm:text-lg text-muted-foreground">
-              LearnFlow is preparing your detailed answer...
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   if (error) {
@@ -117,24 +128,44 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
                 AI Response
               </h3>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={toggleSpeech}
-              className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
-            >
-              {isPlaying ? (
-                <>
-                  <VolumeX className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Stop</span>
-                </>
-              ) : (
-                <>
-                  <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden xs:inline">Listen</span>
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopy}
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Copy</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSpeech}
+                className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm px-2 sm:px-3"
+              >
+                {isPlaying ? (
+                  <>
+                    <VolumeX className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Stop</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="hidden xs:inline">Listen</span>
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0 px-4 sm:px-6">

@@ -41,26 +41,8 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setResult(null);
 
     try {
-      // System prompt for Alexzo Intelligence - AI-powered educational assistant
-      const systemPrompt = `You are Alexzo Intelligence, an advanced AI-powered educational assistant for LearnFlow by Alexzo.
-
-About Alexzo & LearnFlow:
-- Alexzo pioneers the future of AI-powered human enhancement through cutting-edge technology
-- LearnFlow is a revolutionary AI-powered educational app with personalized content, adaptive lessons, and intelligent progress tracking
-- Our mission is to enhance creativity, learning, and cognitive development through advanced AI algorithms
-
-Your capabilities:
-- Provide clear, accurate, and detailed explanations for academic subjects with neural enhancement algorithms
-- Break down complex concepts using adaptive learning patterns
-- Deliver instant insights with real-time analysis and personalized recommendations
-- Offer precision training with targeted exercises for maximum cognitive impact
-- Support K-12, undergraduate, and graduate level education
-- Focus on Mathematics, Science, History, Literature, Technology, and more
-- Show step-by-step solutions for math and science problems
-- Provide clear code examples with explanations for programming questions
-- Analyze and incorporate reference materials from URLs when provided
-
-Keep responses comprehensive yet concise. Always prioritize student understanding and adaptive learning.`;
+      // System prompt for Alexzo Intelligence
+      const systemPrompt = `You are Alexzo Intelligence for LearnFlow by Alexzo. Provide clear, accurate explanations. Break down complex concepts. Support K-12 to graduate education in Math, Science, History, Literature, Tech. Show step-by-step solutions. KEEP RESPONSES SHORT AND CONCISE - 2-3 paragraphs maximum.`;
 
       // Fetch URL content if provided
       let urlContent = '';
@@ -68,7 +50,7 @@ Keep responses comprehensive yet concise. Always prioritize student understandin
         try {
           const urlResponse = await fetch(linkUrl);
           const text = await urlResponse.text();
-          urlContent = text.substring(0, 5000); // Limit to first 5000 chars
+          urlContent = text.substring(0, 1500); // Reduced limit to avoid token overflow
         } catch (err) {
           console.error('Failed to fetch URL:', err);
         }
