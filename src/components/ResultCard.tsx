@@ -10,9 +10,10 @@ interface ResultCardProps {
   isLoading: boolean;
   result: string | null;
   error: string | null;
+  sources?: {url: string, domain: string}[];
 }
 
-export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error }) => {
+export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error, sources = [] }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
   const [copied, setCopied] = useState(false);
@@ -190,6 +191,36 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
               {result}
             </ReactMarkdown>
           </div>
+          
+          {/* Sources Section */}
+          {sources.length > 0 && (
+            <div className="mt-6 pt-4 border-t border-border">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3">Sources</h4>
+              <div className="space-y-2">
+                {sources.map((source, idx) => (
+                  <a
+                    key={idx}
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors group"
+                  >
+                    <img 
+                      src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`}
+                      alt=""
+                      className="w-4 h-4 flex-shrink-0"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                    <span className="text-sm text-primary group-hover:underline truncate">
+                      {source.domain}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

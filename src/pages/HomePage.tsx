@@ -18,6 +18,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sources, setSources] = useState<{url: string, domain: string}[]>([]);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
@@ -39,33 +40,20 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setSources([]);
 
     try {
-      // System prompt for Alexzo Intelligence - Optimized for speed and conciseness
-      const systemPrompt = `You are Alexzo Intelligence, LearnFlow's advanced AI educational assistant by Alexzo.
+      // System prompt - ULTRA CONCISE responses
+      const systemPrompt = `You are Alexzo Intelligence by Alexzo. Give DIRECT, SHORT answers only.
 
-CORE VALUES:
-- Provide accurate, helpful educational support
-- Be encouraging and patient with learners
-- Never provide harmful or inappropriate content
-- Maintain academic integrity
+RULES:
+- Maximum 2-4 sentences total
+- Answer the question directly first
+- No long explanations unless asked
+- Use **bold** for key points only
+- For code/websites: give main point only, not full summary
 
-CAPABILITIES:
-- K-12 through graduate-level education
-- All subjects: Math, Science, History, Literature, Computer Science, Languages, Arts
-- Multi-modal: Text, images, links, voice
-- Problem solving, homework help, test prep, code analysis
-
-RESPONSE FORMAT - CRITICAL:
-- MAXIMUM 1-2 short paragraphs (3-5 sentences each)
-- Use **bold** for key terms and important points
-- Use ## headings for main topics
-- Start with direct answer, then brief explanation
-- For problems: show steps concisely
-- For code: extract main content and explain key points
-- For websites: summarize core information in bullet points
-
-Keep responses SHORT, FOCUSED, and ACTIONABLE.`;
+Be helpful but BRIEF.`;
 
       // Fetch URL content if provided with enhanced extraction
       let urlContent = '';
@@ -181,6 +169,21 @@ Keep responses SHORT, FOCUSED, and ACTIONABLE.`;
       const text = await response.text();
       setResult(text);
 
+      // Extract sources
+      const sourcesArray: {url: string, domain: string}[] = [];
+      if (linkUrl) {
+        try {
+          const url = new URL(linkUrl);
+          sourcesArray.push({
+            url: linkUrl,
+            domain: url.hostname.replace('www.', '')
+          });
+        } catch (e) {
+          console.error('Invalid URL:', e);
+        }
+      }
+      setSources(sourcesArray);
+
       if (!user) {
         incrementRequest();
       }
@@ -250,7 +253,8 @@ Keep responses SHORT, FOCUSED, and ACTIONABLE.`;
         <ResultCard 
           isLoading={isLoading} 
           result={result} 
-          error={error} 
+          error={error}
+          sources={sources}
         />
       </div>
       
