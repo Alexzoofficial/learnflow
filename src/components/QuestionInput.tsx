@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { VoiceRecorder } from './VoiceRecorder';
 
 interface QuestionInputProps {
-  onSubmit: (question: string, image?: File, linkUrl?: string) => void;
+  onSubmit: (question: string, image?: File, linkUrl?: string, includeRelatedSources?: boolean) => void;
   isLoading: boolean;
   disabled?: boolean;
 }
@@ -19,6 +19,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [includeRelatedSources, setIncludeRelatedSources] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
@@ -29,8 +30,9 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
       onSubmit('Please analyze this image and provide a detailed explanation.', selectedImage);
       handleImageRemove();
     } else if (mode === 'link' && linkUrl.trim()) {
-      onSubmit(`Please analyze this link: ${linkUrl.trim()}`, undefined, linkUrl.trim());
+      onSubmit(`Please analyze this link: ${linkUrl.trim()}`, undefined, linkUrl.trim(), includeRelatedSources);
       setLinkUrl('');
+      setIncludeRelatedSources(false);
     }
   };
 
@@ -162,9 +164,23 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
               disabled={isLoading || disabled}
             />
           </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="relatedSources"
+              checked={includeRelatedSources}
+              onChange={(e) => setIncludeRelatedSources(e.target.checked)}
+              className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              disabled={isLoading || disabled}
+            />
+            <label htmlFor="relatedSources" className="text-sm font-medium cursor-pointer">
+              Include related sources from the website
+            </label>
+          </div>
           <div className="text-xs text-muted-foreground">
             <p>• Paste any website URL, article link, or web page</p>
             <p>• The AI will analyze the content for you</p>
+            <p>• Enable related sources to fetch additional linked content</p>
           </div>
         </div>
       )}
