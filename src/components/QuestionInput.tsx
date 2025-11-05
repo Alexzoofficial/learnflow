@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { FileText, Image, Upload, X, Mic, Link } from 'lucide-react';
+import { FileText, Image, Upload, X, Mic, Link, Paperclip, File } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VoiceRecorder } from './VoiceRecorder';
 
@@ -20,11 +20,19 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [includeRelatedSources, setIncludeRelatedSources] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = () => {
     if (mode === 'text' && question.trim()) {
-      onSubmit(question.trim());
+      // If file is attached in text mode, treat it as image
+      if (selectedFile) {
+        onSubmit(question.trim(), selectedFile);
+        setSelectedFile(null);
+      } else {
+        onSubmit(question.trim());
+      }
       setQuestion('');
     } else if (mode === 'image' && selectedImage) {
       onSubmit('Please analyze this image and provide a detailed explanation.', selectedImage);
@@ -34,6 +42,25 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
       setLinkUrl('');
       setIncludeRelatedSources(false);
     }
+  };
+
+  const handleFileAttachment = (file: File) => {
+    // Support images and PDFs
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please select a valid file (JPG, PNG, GIF, WebP, or PDF)');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+    setSelectedFile(file);
+  };
+
+  const handleFileRemove = () => {
+    setSelectedFile(null);
+    if (attachmentInputRef.current) attachmentInputRef.current.value = '';
   };
 
   const handleImageSelect = (file: File) => {
@@ -117,15 +144,53 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
 
       {/* Text Mode */}
       {mode === 'text' && (
-        <div className="space-y-4">
-          <Textarea
-            value={question}
-            onChange={(e) => setQuestion(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask LearnFlow anything... e.g., 'Explain relativity', 'Solve 2x + 5 = 15'"
-            className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base border-2 focus:border-primary"
-            disabled={isLoading || disabled}
-          />
+        <div className="space-y-3">
+          <div className="relative">
+            <Textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Ask LearnFlow anything... e.g., 'Explain relativity', 'Solve 2x + 5 = 15'"
+              className="min-h-[100px] sm:min-h-[120px] resize-none text-sm sm:text-base border-2 focus:border-primary pr-12"
+              disabled={isLoading || disabled}
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-full hover:bg-primary/10"
+              onClick={() => attachmentInputRef.current?.click()}
+              disabled={isLoading || disabled}
+              title="Attach file (Image or PDF)"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <input
+              ref={attachmentInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFileAttachment(file);
+              }}
+              className="hidden"
+            />
+          </div>
+          
+          {/* Show attached file */}
+          {selectedFile && (
+            <div className="flex items-center gap-2 p-2 bg-muted rounded-md border border-border">
+              <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-xs flex-1 truncate">{selectedFile.name}</span>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 flex-shrink-0"
+                onClick={handleFileRemove}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
