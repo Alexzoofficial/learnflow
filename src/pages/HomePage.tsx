@@ -19,6 +19,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sources, setSources] = useState<{url: string, domain: string}[]>([]);
+  const [searchingWebsites, setSearchingWebsites] = useState<{url: string, domain: string}[]>([]);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
@@ -41,8 +42,62 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setError(null);
     setResult(null);
     setSources([]);
+    setSearchingWebsites([]);
 
     try {
+      // Web search using Whoogle if question needs external knowledge
+      let webSearchResults = '';
+      const searchedWebsites: {url: string, domain: string}[] = [];
+      
+      if (!linkUrl && !image && question.trim()) {
+        try {
+          const searchQuery = encodeURIComponent(question.trim());
+          const whoogleResponse = await fetch(`https://whoogle-bbso.onrender.com/search?q=${searchQuery}&format=json`);
+          
+          if (whoogleResponse.ok) {
+            const searchData = await whoogleResponse.json();
+            
+            if (searchData && Array.isArray(searchData)) {
+              // Take top 3 results
+              for (const item of searchData.slice(0, 3)) {
+                if (item.url && item.url.startsWith('http')) {
+                  try {
+                    const url = new URL(item.url);
+                    const websiteInfo = {
+                      url: item.url,
+                      domain: url.hostname.replace('www.', '')
+                    };
+                    searchedWebsites.push(websiteInfo);
+                    setSearchingWebsites(prev => [...prev, websiteInfo]);
+                    
+                    // Fetch content from this URL
+                    const pageResponse = await fetch(item.url);
+                    const html = await pageResponse.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    // Remove unwanted elements
+                    const unwantedElements = doc.querySelectorAll('script, style, nav, header, footer, aside');
+                    unwantedElements.forEach(el => el.remove());
+                    
+                    const mainContent = doc.body?.textContent || '';
+                    const cleanContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 800);
+                    
+                    if (cleanContent) {
+                      webSearchResults += `\n\n[From ${item.url}]: ${cleanContent}`;
+                    }
+                  } catch (err) {
+                    console.error('Failed to fetch search result:', err);
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          console.error('Whoogle search failed:', err);
+        }
+      }
+
       // System prompt - ULTRA CONCISE responses
       const systemPrompt = `You are Alexzo Intelligence by Alexzo. Give DIRECT, SHORT answers only.
 
@@ -125,6 +180,10 @@ Be helpful but BRIEF.`;
       // Build user message content
       let userMessageContent = `Subject Context: ${activeSubject}\n\nStudent Question: ${question}`;
       
+      if (webSearchResults) {
+        userMessageContent += `\n\nWeb Search Results:\n${webSearchResults}`;
+      }
+      
       if (linkUrl && urlContent) {
         userMessageContent += `\n\nWebsite Content from ${linkUrl}:\n${urlContent}`;
         
@@ -175,8 +234,14 @@ Be helpful but BRIEF.`;
       const text = await response.text();
       setResult(text);
 
-      // Extract sources - include main URL and related sources
+      // Extract sources - include web search results, main URL and related sources
       const sourcesArray: {url: string, domain: string}[] = [];
+      
+      // Add web search sources
+      if (searchedWebsites.length > 0) {
+        sourcesArray.push(...searchedWebsites);
+      }
+      
       if (linkUrl) {
         try {
           const url = new URL(linkUrl);
@@ -258,6 +323,34 @@ Be helpful but BRIEF.`;
         />
       </div>
       
+      {/* Searching Websites Progress */}
+      {searchingWebsites.length > 0 && isLoading && (
+        <div className="w-full p-4 bg-muted/50 rounded-lg border border-border">
+          <p className="text-sm font-medium mb-3">🔍 Searching web...</p>
+          <div className="flex flex-wrap gap-2">
+            {searchingWebsites.map((site, idx) => (
+              <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border border-border">
+                <img 
+                  src={`https://icons.duckduckgo.com/ip3/${site.domain}.ico`}
+                  alt=""
+                  className="w-4 h-4"
+                  loading="eager"
+                  onError={(e) => {
+                    const target = e.currentTarget as HTMLImageElement;
+                    if (!target.src.includes('google.com')) {
+                      target.src = `https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`;
+                    } else {
+                      target.style.display = 'none';
+                    }
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">{site.domain}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Result Card - Mobile Optimized */}
       <div className="w-full">
         <ResultCard 
