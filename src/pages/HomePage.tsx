@@ -57,7 +57,8 @@ Be helpful but BRIEF.`;
 
       // Fetch URL content if provided with enhanced extraction
       let urlContent = '';
-      let relatedSources: string[] = [];
+      let relatedSourcesContent: string[] = [];
+      let relatedSourcesUrls: {url: string, domain: string}[] = [];
       
       if (linkUrl) {
         try {
@@ -92,7 +93,12 @@ Be helpful but BRIEF.`;
                     const relatedDoc = parser.parseFromString(relatedHtml, 'text/html');
                     const relatedText = relatedDoc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 500);
                     if (relatedText) {
-                      relatedSources.push(`[From ${fullUrl}]: ${relatedText}`);
+                      relatedSourcesContent.push(`[From ${fullUrl}]: ${relatedText}`);
+                      const relatedUrl = new URL(fullUrl);
+                      relatedSourcesUrls.push({
+                        url: fullUrl,
+                        domain: relatedUrl.hostname.replace('www.', '')
+                      });
                     }
                   }
                 } catch (err) {
@@ -122,8 +128,8 @@ Be helpful but BRIEF.`;
       if (linkUrl && urlContent) {
         userMessageContent += `\n\nWebsite Content from ${linkUrl}:\n${urlContent}`;
         
-        if (relatedSources.length > 0) {
-          userMessageContent += `\n\nRelated Sources:\n${relatedSources.join('\n\n')}`;
+        if (relatedSourcesContent.length > 0) {
+          userMessageContent += `\n\nRelated Sources:\n${relatedSourcesContent.join('\n\n')}`;
         }
       }
 
@@ -169,7 +175,7 @@ Be helpful but BRIEF.`;
       const text = await response.text();
       setResult(text);
 
-      // Extract sources
+      // Extract sources - include main URL and related sources
       const sourcesArray: {url: string, domain: string}[] = [];
       if (linkUrl) {
         try {
@@ -178,6 +184,10 @@ Be helpful but BRIEF.`;
             url: linkUrl,
             domain: url.hostname.replace('www.', '')
           });
+          // Add related sources if they were fetched
+          if (relatedSourcesUrls.length > 0) {
+            sourcesArray.push(...relatedSourcesUrls);
+          }
         } catch (e) {
           console.error('Invalid URL:', e);
         }

@@ -206,11 +206,18 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors group"
                   >
                     <img 
-                      src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`}
+                      src={`https://icons.duckduckgo.com/ip3/${source.domain}.ico`}
                       alt=""
                       className="w-4 h-4 flex-shrink-0"
+                      loading="eager"
                       onError={(e) => {
-                        e.currentTarget.style.display = 'none';
+                        // Fallback to Google favicon if DDG fails
+                        const target = e.currentTarget as HTMLImageElement;
+                        if (!target.src.includes('google.com')) {
+                          target.src = `https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`;
+                        } else {
+                          target.style.display = 'none';
+                        }
                       }}
                     />
                     <span className="text-sm text-primary group-hover:underline truncate">
