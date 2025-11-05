@@ -45,11 +45,22 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setSearchingWebsites([]);
 
     try {
-      // Web search using Whoogle if question needs external knowledge
+      // Smart web search - only when needed (latest, new, current info)
+      const needsWebSearch = !linkUrl && !image && question.trim() && (
+        question.toLowerCase().includes('latest') ||
+        question.toLowerCase().includes('new') ||
+        question.toLowerCase().includes('current') ||
+        question.toLowerCase().includes('recent') ||
+        question.toLowerCase().includes('today') ||
+        question.toLowerCase().includes('2025') ||
+        question.toLowerCase().includes('available') ||
+        question.toLowerCase().includes('released')
+      );
+
       let webSearchResults = '';
       const searchedWebsites: {url: string, domain: string}[] = [];
       
-      if (!linkUrl && !image && question.trim()) {
+      if (needsWebSearch) {
         try {
           const searchQuery = encodeURIComponent(question.trim());
           const whoogleResponse = await fetch(`https://whoogle-bbso.onrender.com/search?q=${searchQuery}&format=json`);
@@ -59,19 +70,29 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
             
             if (searchData && Array.isArray(searchData)) {
               // Take top 3 results
-              for (const item of searchData.slice(0, 3)) {
-                if (item.url && item.url.startsWith('http')) {
-                  try {
-                    const url = new URL(item.url);
-                    const websiteInfo = {
-                      url: item.url,
-                      domain: url.hostname.replace('www.', '')
-                    };
-                    searchedWebsites.push(websiteInfo);
-                    setSearchingWebsites(prev => [...prev, websiteInfo]);
-                    
-                    // Fetch content from this URL
-                    const pageResponse = await fetch(item.url);
+              const validResults = searchData.filter((item: any) => item.url && item.url.startsWith('http')).slice(0, 3);
+              
+              for (const item of validResults) {
+                try {
+                  const url = new URL(item.url);
+                  const websiteInfo = {
+                    url: item.url,
+                    domain: url.hostname.replace('www.', '')
+                  };
+                  searchedWebsites.push(websiteInfo);
+                  setSearchingWebsites(prev => [...prev, websiteInfo]);
+                  
+                  // Fetch content with timeout
+                  const controller = new AbortController();
+                  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
+                  
+                  const pageResponse = await fetch(item.url, { 
+                    signal: controller.signal,
+                    mode: 'cors'
+                  });
+                  clearTimeout(timeoutId);
+                  
+                  if (pageResponse.ok) {
                     const html = await pageResponse.text();
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
@@ -84,11 +105,12 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
                     const cleanContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 800);
                     
                     if (cleanContent) {
-                      webSearchResults += `\n\n[From ${item.url}]: ${cleanContent}`;
+                      webSearchResults += `\n\n[Source: ${item.url}]\n${cleanContent}`;
                     }
-                  } catch (err) {
-                    console.error('Failed to fetch search result:', err);
                   }
+                } catch (err) {
+                  console.error('Failed to fetch search result:', err);
+                  // Continue with next result
                 }
               }
             }
@@ -117,47 +139,68 @@ Be helpful but BRIEF.`;
       
       if (linkUrl) {
         try {
-          const urlResponse = await fetch(linkUrl);
-          const html = await urlResponse.text();
+          // Fetch main URL with timeout
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
           
-          // Extract text content (strip HTML tags)
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(html, 'text/html');
+          const urlResponse = await fetch(linkUrl, { 
+            signal: controller.signal,
+            mode: 'cors'
+          });
+          clearTimeout(timeoutId);
           
-          // Remove script, style, and navigation elements
-          const unwantedElements = doc.querySelectorAll('script, style, nav, header, footer, aside');
-          unwantedElements.forEach(el => el.remove());
-          
-          // Get main content (limit to 1200 chars for faster processing)
-          const mainContent = doc.body?.textContent || '';
-          urlContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 1200);
-          
-          // Extract related links if requested
-          if (includeRelatedSources) {
-            const links = Array.from(doc.querySelectorAll('a[href]'));
-            const baseUrl = new URL(linkUrl);
+          if (urlResponse.ok) {
+            const html = await urlResponse.text();
             
-            for (const link of links.slice(0, 5)) { // Limit to 5 related sources
-              const href = link.getAttribute('href');
-              if (href && (href.startsWith('http') || href.startsWith('/'))) {
-                try {
-                  const fullUrl = href.startsWith('http') ? href : new URL(href, baseUrl).toString();
-                  if (fullUrl.includes(baseUrl.hostname)) {
-                    const relatedResponse = await fetch(fullUrl);
-                    const relatedHtml = await relatedResponse.text();
-                    const relatedDoc = parser.parseFromString(relatedHtml, 'text/html');
-                    const relatedText = relatedDoc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 500);
-                    if (relatedText) {
-                      relatedSourcesContent.push(`[From ${fullUrl}]: ${relatedText}`);
-                      const relatedUrl = new URL(fullUrl);
-                      relatedSourcesUrls.push({
-                        url: fullUrl,
-                        domain: relatedUrl.hostname.replace('www.', '')
+            // Extract text content (strip HTML tags)
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Remove script, style, and navigation elements
+            const unwantedElements = doc.querySelectorAll('script, style, nav, header, footer, aside');
+            unwantedElements.forEach(el => el.remove());
+            
+            // Get main content (limit to 1200 chars for faster processing)
+            const mainContent = doc.body?.textContent || '';
+            urlContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 1200);
+            
+            // Extract related links if requested
+            if (includeRelatedSources) {
+              const links = Array.from(doc.querySelectorAll('a[href]'));
+              const baseUrl = new URL(linkUrl);
+              
+              for (const link of links.slice(0, 5)) { // Limit to 5 related sources
+                const href = link.getAttribute('href');
+                if (href && (href.startsWith('http') || href.startsWith('/'))) {
+                  try {
+                    const fullUrl = href.startsWith('http') ? href : new URL(href, baseUrl).toString();
+                    if (fullUrl.includes(baseUrl.hostname)) {
+                      const relatedController = new AbortController();
+                      const relatedTimeoutId = setTimeout(() => relatedController.abort(), 5000);
+                      
+                      const relatedResponse = await fetch(fullUrl, { 
+                        signal: relatedController.signal,
+                        mode: 'cors'
                       });
+                      clearTimeout(relatedTimeoutId);
+                      
+                      if (relatedResponse.ok) {
+                        const relatedHtml = await relatedResponse.text();
+                        const relatedDoc = parser.parseFromString(relatedHtml, 'text/html');
+                        const relatedText = relatedDoc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 500);
+                        if (relatedText) {
+                          relatedSourcesContent.push(`[From ${fullUrl}]: ${relatedText}`);
+                          const relatedUrl = new URL(fullUrl);
+                          relatedSourcesUrls.push({
+                            url: fullUrl,
+                            domain: relatedUrl.hostname.replace('www.', '')
+                          });
+                        }
+                      }
                     }
+                  } catch (err) {
+                    console.error('Failed to fetch related source:', err);
                   }
-                } catch (err) {
-                  console.error('Failed to fetch related source:', err);
                 }
               }
             }
