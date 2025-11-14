@@ -44,6 +44,18 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setSources([]);
     setSearchingWebsites([]);
 
+    // Start IP tracking in parallel (non-blocking)
+    const ipTrackingPromise = fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => {
+        console.log('User IP tracked:', data.ip);
+        return data.ip;
+      })
+      .catch(err => {
+        console.error('IP tracking failed:', err);
+        return 'unknown';
+      });
+
     try {
       // Smart web search - only when needed (latest, new, current info)
       const needsWebSearch = !linkUrl && !image && question.trim() && (
@@ -72,7 +84,8 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
               // Take top 3 results
               const validResults = searchData.filter((item: any) => item.url && item.url.startsWith('http')).slice(0, 3);
               
-              for (const item of validResults) {
+              // Fetch pages in parallel for faster results
+              const fetchPromises = validResults.map(async (item) => {
                 try {
                   const url = new URL(item.url);
                   const websiteInfo = {
@@ -82,9 +95,9 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
                   searchedWebsites.push(websiteInfo);
                   setSearchingWebsites(prev => [...prev, websiteInfo]);
                   
-                  // Fetch content with timeout
+                  // Fetch content with reduced timeout for speed
                   const controller = new AbortController();
-                  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 sec timeout
+                  const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 sec timeout
                   
                   const pageResponse = await fetch(item.url, { 
                     signal: controller.signal,
@@ -102,17 +115,25 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
                     unwantedElements.forEach(el => el.remove());
                     
                     const mainContent = doc.body?.textContent || '';
-                    const cleanContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 800);
+                    const cleanContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 600);
                     
                     if (cleanContent) {
-                      webSearchResults += `\n\n[Source: ${item.url}]\n${cleanContent}`;
+                      return { url: item.url, content: cleanContent };
                     }
                   }
                 } catch (err) {
                   console.error('Failed to fetch search result:', err);
-                  // Continue with next result
                 }
-              }
+                return null;
+              });
+
+              // Wait for all fetches to complete (with timeout)
+              const results = await Promise.allSettled(fetchPromises);
+              results.forEach((result) => {
+                if (result.status === 'fulfilled' && result.value) {
+                  webSearchResults += `\n\n[Source: ${result.value.url}]\n${result.value.content}`;
+                }
+              });
             }
           }
         } catch (err) {
@@ -120,17 +141,24 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
         }
       }
 
-      // System prompt - ULTRA CONCISE responses
-      const systemPrompt = `You are Alexzo Intelligence by Alexzo. Give DIRECT, SHORT answers only.
+      // System prompt - OPTIMIZED for quality & speed
+      const systemPrompt = `You are Alexzo Intelligence - an advanced AI assistant by Alexzo.
 
-RULES:
-- Maximum 2-4 sentences total
-- Answer the question directly first
-- No long explanations unless asked
-- Use **bold** for key points only
-- For code/websites: give main point only, not full summary
+CORE PRINCIPLES:
+- Provide ACCURATE, DIRECT answers with clear explanations
+- Use **bold** for key terms and important points
+- Structure responses with bullet points when listing multiple items
+- For technical queries: give working solutions with brief context
+- For factual queries: cite information from provided sources
+- For educational content: explain concepts clearly and concisely
 
-Be helpful but BRIEF.`;
+RESPONSE FORMAT:
+- Start with the direct answer (1-2 sentences)
+- Add supporting details only if necessary
+- Keep total response under 6-8 sentences unless complex topic
+- Use markdown formatting for better readability
+
+Be intelligent, helpful, and efficient.`;
 
       // Fetch URL content if provided with enhanced extraction
       let urlContent = '';
@@ -255,18 +283,10 @@ Be helpful but BRIEF.`;
         });
       }
 
-      // Get user IP for tracking
-      let userIP = 'unknown';
-      try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json');
-        const ipData = await ipResponse.json();
-        userIP = ipData.ip;
-        console.log('User IP tracked:', userIP);
-      } catch (err) {
-        console.error('Failed to get IP:', err);
-      }
+      // Wait for IP tracking to complete (non-blocking, already started)
+      await ipTrackingPromise;
 
-      // MODEL: pollinations.ai with GPT-5 (best quality, vision-capable)
+      // MODEL: pollinations.ai GPT-5 (fastest + best quality, vision-capable)
       const response = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: {
