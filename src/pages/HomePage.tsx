@@ -19,7 +19,8 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sources, setSources] = useState<{url: string, domain: string}[]>([]);
-  const [searchingWebsites, setSearchingWebsites] = useState<{url: string, domain: string}[]>([]);
+  const [isSearchingWeb, setIsSearchingWeb] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
@@ -42,132 +43,27 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     setError(null);
     setResult(null);
     setSources([]);
-    setSearchingWebsites([]);
+    setIsSearchingWeb(false);
+    setSearchQuery(null);
 
-    // Start IP tracking in parallel (non-blocking)
-    const ipTrackingPromise = fetch('https://api.ipify.org?format=json')
-      .then(res => res.json())
-      .then(data => {
-        console.log('User IP tracked:', data.ip);
-        return data.ip;
-      })
-      .catch(err => {
-        console.error('IP tracking failed:', err);
-        return 'unknown';
-      });
+    // Get user IP
+    let userIP = 'unknown';
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      userIP = ipData.ip;
+      console.log('User IP tracked:', userIP);
+    } catch (err) {
+      console.error('IP tracking failed:', err);
+    }
 
     try {
-      // Smart web search - only when needed (latest, new, current info)
-      const needsWebSearch = !linkUrl && !image && question.trim() && (
-        question.toLowerCase().includes('latest') ||
-        question.toLowerCase().includes('new') ||
-        question.toLowerCase().includes('current') ||
-        question.toLowerCase().includes('recent') ||
-        question.toLowerCase().includes('today') ||
-        question.toLowerCase().includes('2025') ||
-        question.toLowerCase().includes('available') ||
-        question.toLowerCase().includes('released')
-      );
-
-      let webSearchResults = '';
-      const searchedWebsites: {url: string, domain: string}[] = [];
+      // Build user message content
+      let userMessageContent = `Subject Context: ${activeSubject}\n\nStudent Question: ${question}`;
       
-      if (needsWebSearch) {
-        try {
-          const searchQuery = encodeURIComponent(question.trim());
-          const whoogleResponse = await fetch(`https://whoogle-bbso.onrender.com/search?q=${searchQuery}&format=json`);
-          
-          if (whoogleResponse.ok) {
-            const searchData = await whoogleResponse.json();
-            
-            if (searchData && Array.isArray(searchData)) {
-              // Take top 3 results
-              const validResults = searchData.filter((item: any) => item.url && item.url.startsWith('http')).slice(0, 3);
-              
-              // Fetch pages in parallel for faster results
-              const fetchPromises = validResults.map(async (item) => {
-                try {
-                  const url = new URL(item.url);
-                  const websiteInfo = {
-                    url: item.url,
-                    domain: url.hostname.replace('www.', '')
-                  };
-                  searchedWebsites.push(websiteInfo);
-                  setSearchingWebsites(prev => [...prev, websiteInfo]);
-                  
-                  // Fetch content with reduced timeout for speed
-                  const controller = new AbortController();
-                  const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 sec timeout
-                  
-                  const pageResponse = await fetch(item.url, { 
-                    signal: controller.signal,
-                    mode: 'cors'
-                  });
-                  clearTimeout(timeoutId);
-                  
-                  if (pageResponse.ok) {
-                    const html = await pageResponse.text();
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    
-                    // Remove unwanted elements
-                    const unwantedElements = doc.querySelectorAll('script, style, nav, header, footer, aside');
-                    unwantedElements.forEach(el => el.remove());
-                    
-                    const mainContent = doc.body?.textContent || '';
-                    const cleanContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 600);
-                    
-                    if (cleanContent) {
-                      return { url: item.url, content: cleanContent };
-                    }
-                  }
-                } catch (err) {
-                  console.error('Failed to fetch search result:', err);
-                }
-                return null;
-              });
-
-              // Wait for all fetches to complete (with timeout)
-              const results = await Promise.allSettled(fetchPromises);
-              results.forEach((result) => {
-                if (result.status === 'fulfilled' && result.value) {
-                  webSearchResults += `\n\n[Source: ${result.value.url}]\n${result.value.content}`;
-                }
-              });
-            }
-          }
-        } catch (err) {
-          console.error('Whoogle search failed:', err);
-        }
-      }
-
-      // System prompt - OPTIMIZED for quality & speed
-      const systemPrompt = `You are Alexzo Intelligence - an advanced AI assistant by Alexzo.
-
-CORE PRINCIPLES:
-- Provide ACCURATE, DIRECT answers with clear explanations
-- Use **bold** for key terms and important points
-- Structure responses with bullet points when listing multiple items
-- For technical queries: give working solutions with brief context
-- For factual queries: cite information from provided sources
-- For educational content: explain concepts clearly and concisely
-
-RESPONSE FORMAT:
-- Start with the direct answer (1-2 sentences)
-- Add supporting details only if necessary
-- Keep total response under 6-8 sentences unless complex topic
-- Use markdown formatting for better readability
-
-Be intelligent, helpful, and efficient.`;
-
-      // Fetch URL content if provided with enhanced extraction
-      let urlContent = '';
-      let relatedSourcesContent: string[] = [];
-      let relatedSourcesUrls: {url: string, domain: string}[] = [];
-      
+      // Fetch URL content if provided
       if (linkUrl) {
         try {
-          // Fetch main URL with timeout
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 5000);
           
@@ -179,91 +75,32 @@ Be intelligent, helpful, and efficient.`;
           
           if (urlResponse.ok) {
             const html = await urlResponse.text();
-            
-            // Extract text content (strip HTML tags)
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             
-            // Remove script, style, and navigation elements
             const unwantedElements = doc.querySelectorAll('script, style, nav, header, footer, aside');
             unwantedElements.forEach(el => el.remove());
             
-            // Get main content (limit to 1200 chars for faster processing)
             const mainContent = doc.body?.textContent || '';
-            urlContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 1200);
+            const urlContent = mainContent.replace(/\s+/g, ' ').trim().substring(0, 1200);
             
-            // Extract related links if requested
-            if (includeRelatedSources) {
-              const links = Array.from(doc.querySelectorAll('a[href]'));
-              const baseUrl = new URL(linkUrl);
-              
-              for (const link of links.slice(0, 5)) { // Limit to 5 related sources
-                const href = link.getAttribute('href');
-                if (href && (href.startsWith('http') || href.startsWith('/'))) {
-                  try {
-                    const fullUrl = href.startsWith('http') ? href : new URL(href, baseUrl).toString();
-                    if (fullUrl.includes(baseUrl.hostname)) {
-                      const relatedController = new AbortController();
-                      const relatedTimeoutId = setTimeout(() => relatedController.abort(), 5000);
-                      
-                      const relatedResponse = await fetch(fullUrl, { 
-                        signal: relatedController.signal,
-                        mode: 'cors'
-                      });
-                      clearTimeout(relatedTimeoutId);
-                      
-                      if (relatedResponse.ok) {
-                        const relatedHtml = await relatedResponse.text();
-                        const relatedDoc = parser.parseFromString(relatedHtml, 'text/html');
-                        const relatedText = relatedDoc.body?.textContent?.replace(/\s+/g, ' ').trim().substring(0, 500);
-                        if (relatedText) {
-                          relatedSourcesContent.push(`[From ${fullUrl}]: ${relatedText}`);
-                          const relatedUrl = new URL(fullUrl);
-                          relatedSourcesUrls.push({
-                            url: fullUrl,
-                            domain: relatedUrl.hostname.replace('www.', '')
-                          });
-                        }
-                      }
-                    }
-                  } catch (err) {
-                    console.error('Failed to fetch related source:', err);
-                  }
-                }
-              }
-            }
+            userMessageContent += `\n\nWebsite Content from ${linkUrl}:\n${urlContent}`;
+            
+            const url = new URL(linkUrl);
+            setSources([{
+              url: linkUrl,
+              domain: url.hostname.replace('www.', '')
+            }]);
           }
         } catch (err) {
           console.error('Failed to fetch URL:', err);
-          urlContent = 'Unable to fetch content from the provided URL.';
         }
       }
 
-      // Prepare messages for vision-capable model
+      // Prepare messages
       const messages: any[] = [];
-      
-      // Add system message
-      messages.push({
-        role: 'system',
-        content: systemPrompt
-      });
 
-      // Build user message content
-      let userMessageContent = `Subject Context: ${activeSubject}\n\nStudent Question: ${question}`;
-      
-      if (webSearchResults) {
-        userMessageContent += `\n\nWeb Search Results:\n${webSearchResults}`;
-      }
-      
-      if (linkUrl && urlContent) {
-        userMessageContent += `\n\nWebsite Content from ${linkUrl}:\n${urlContent}`;
-        
-        if (relatedSourcesContent.length > 0) {
-          userMessageContent += `\n\nRelated Sources:\n${relatedSourcesContent.join('\n\n')}`;
-        }
-      }
-
-      // Handle image if provided (use vision model with proper format)
+      // Handle image if provided
       if (image) {
         const imageBase64 = await convertImageToBase64(image);
         messages.push({
@@ -283,54 +120,57 @@ Be intelligent, helpful, and efficient.`;
         });
       }
 
-      // Wait for IP tracking to complete (non-blocking, already started)
-      await ipTrackingPromise;
-
-      // MODEL: pollinations.ai GPT-5 (fastest + best quality, vision-capable)
-      const response = await fetch('https://text.pollinations.ai/', {
+      // Call edge function with AI
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
-        body: JSON.stringify({
-          messages: messages,
-          model: 'openai', // Using OpenAI GPT-5 through pollinations
-          seed: Math.floor(Math.random() * 1000000),
-          jsonMode: false
+        body: JSON.stringify({ 
+          messages,
+          userIP 
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`API request failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
       }
 
-      const text = await response.text();
-      setResult(text);
-
-      // Extract sources - include web search results, main URL and related sources
-      const sourcesArray: {url: string, domain: string}[] = [];
+      const data = await response.json();
       
-      // Add web search sources
-      if (searchedWebsites.length > 0) {
-        sourcesArray.push(...searchedWebsites);
-      }
-      
-      if (linkUrl) {
+      // Check if web search was used
+      if (data.usedWebSearch) {
+        setIsSearchingWeb(true);
+        setSearchQuery(data.searchQuery || question);
+        
+        // Extract sources from search query
         try {
-          const url = new URL(linkUrl);
-          sourcesArray.push({
-            url: linkUrl,
-            domain: url.hostname.replace('www.', '')
-          });
-          // Add related sources if they were fetched
-          if (relatedSourcesUrls.length > 0) {
-            sourcesArray.push(...relatedSourcesUrls);
+          const searchQueryEncoded = encodeURIComponent(data.searchQuery || question);
+          const whoogleResponse = await fetch(`https://whoogle-bbso.onrender.com/search?q=${searchQueryEncoded}&format=json`);
+          
+          if (whoogleResponse.ok) {
+            const searchData = await whoogleResponse.json();
+            if (Array.isArray(searchData)) {
+              const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
+              const sourcesArray = validResults.map((item: any) => {
+                const url = new URL(item.url);
+                return {
+                  url: item.url,
+                  domain: url.hostname.replace('www.', '')
+                };
+              });
+              setSources(sourcesArray);
+            }
           }
-        } catch (e) {
-          console.error('Invalid URL:', e);
+        } catch (err) {
+          console.error('Failed to extract sources:', err);
         }
       }
-      setSources(sourcesArray);
+      
+      setResult(data.response);
 
       if (!user) {
         incrementRequest();
@@ -396,12 +236,20 @@ Be intelligent, helpful, and efficient.`;
         />
       </div>
       
-      {/* Searching Websites Progress */}
-      {searchingWebsites.length > 0 && isLoading && (
+      {/* Web Search Status - Show during loading */}
+      {isLoading && (
+        <div className="w-full p-4 bg-muted/50 rounded-lg border border-border animate-pulse">
+          <p className="text-sm font-medium mb-2">🔍 Processing your request...</p>
+          <p className="text-xs text-muted-foreground">AI is analyzing and may search the web if needed</p>
+        </div>
+      )}
+      
+      {/* Show sources while generating response */}
+      {isSearchingWeb && sources.length > 0 && isLoading && (
         <div className="w-full p-4 bg-muted/50 rounded-lg border border-border">
-          <p className="text-sm font-medium mb-3">🔍 Searching web...</p>
+          <p className="text-sm font-medium mb-3">🌐 Searching web for: <span className="text-primary">{searchQuery}</span></p>
           <div className="flex flex-wrap gap-2">
-            {searchingWebsites.map((site, idx) => (
+            {sources.map((site, idx) => (
               <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-md border border-border">
                 <img 
                   src={`https://icons.duckduckgo.com/ip3/${site.domain}.ico`}
