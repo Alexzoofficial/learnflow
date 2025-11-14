@@ -255,8 +255,18 @@ Be helpful but BRIEF.`;
         });
       }
 
-      // MODEL USED: pollinations.ai with 'openai' (supports vision + fast responses)
-      // Alternative models: 'mistral', 'llama' (but no vision support)
+      // Get user IP for tracking
+      let userIP = 'unknown';
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        const ipData = await ipResponse.json();
+        userIP = ipData.ip;
+        console.log('User IP tracked:', userIP);
+      } catch (err) {
+        console.error('Failed to get IP:', err);
+      }
+
+      // MODEL: pollinations.ai with GPT-5 (best quality, vision-capable)
       const response = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: {
@@ -264,7 +274,7 @@ Be helpful but BRIEF.`;
         },
         body: JSON.stringify({
           messages: messages,
-          model: 'openai', // Vision-capable model for image analysis
+          model: 'openai', // Using OpenAI GPT-5 through pollinations
           seed: Math.floor(Math.random() * 1000000),
           jsonMode: false
         }),
