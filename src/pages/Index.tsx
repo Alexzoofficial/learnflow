@@ -137,20 +137,8 @@ const Index = () => {
         {/* Mobile-First Header */}
         <header className="bg-gradient-primary text-primary-foreground shadow-glow sticky top-0 z-30 w-full">
           <div className="w-full px-4 py-3 flex items-center justify-between">
-            {/* Mobile Menu Button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden text-primary-foreground hover:bg-white/20 p-2"
-              onClick={toggleSidebar}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </Button>
-            
             {/* App Title */}
-            <div className="flex-1 lg:flex-none lg:ml-4 flex items-center justify-center lg:justify-start">
+            <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight">
                 LearnFlow
               </h1>
