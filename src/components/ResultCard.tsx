@@ -10,7 +10,7 @@ interface ResultCardProps {
   isLoading: boolean;
   result: string | null;
   error: string | null;
-  sources?: {url: string, domain: string}[];
+  sources?: {url: string, domain: string, completed: boolean}[];
 }
 
 export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error, sources = [] }) => {
