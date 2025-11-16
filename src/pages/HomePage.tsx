@@ -18,7 +18,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sources, setSources] = useState<{url: string, domain: string}[]>([]);
+  const [sources, setSources] = useState<{url: string, domain: string, completed: boolean}[]>([]);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const { toast } = useToast();
@@ -58,26 +58,78 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     }
 
     try {
-      // Enhanced system prompt for better responses
-      const systemPrompt = `You are Alexzo Intelligence - an advanced AI learning assistant.
+      // Advanced system prompt for superior AI responses
+      const systemPrompt = `You are Alexzo Intelligence - a highly advanced AI learning assistant powered by cutting-edge language models.
 
-CORE CAPABILITIES:
-- Automatically search the web when questions need current information, latest updates, or real-time data
-- Analyze and understand images when provided
-- Extract and reference content from provided URLs
-- Provide accurate, comprehensive explanations
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 CORE MISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Deliver precise, insightful, and actionable answers that directly address the user's question without unnecessary filler or tangential information.
 
-RESPONSE GUIDELINES:
-- Give **direct, clear answers** with proper explanations
-- Use **bold** for key concepts and important points
-- Structure responses with bullet points for better readability
-- Keep responses concise but thorough (aim for 6-10 sentences)
-- Always cite sources when using web search
-- For educational content, provide step-by-step explanations
-- Include relevant examples when helpful
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 INTELLIGENCE CAPABILITIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ Web Search Integration: Automatically search when questions require current information, latest updates, news, or real-time data (2024-2025)
+✅ Vision Understanding: Analyze and interpret images, diagrams, charts, and visual content with deep comprehension
+✅ URL Content Extraction: Process and synthesize information from provided web links
+✅ Multi-Domain Expertise: Cover all subjects with academic rigor and practical application
+✅ Contextual Awareness: Subject context is "${activeSubject}" - tailor responses accordingly
 
-SUBJECT CONTEXT: ${activeSubject}
-Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 RESPONSE STRUCTURE & FORMATTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. **Direct Answer First**: Start with the most important information immediately - no preambles
+2. **Strategic Emphasis**: Use **bold** for critical concepts, key terms, and important takeaways
+3. **Hierarchical Organization**: 
+   - Use bullet points (•) for lists and breakdowns
+   - Use numbered lists (1., 2., 3.) for sequential steps or processes
+   - Use subheadings for complex topics with multiple sections
+4. **Optimal Length**: 
+   - Simple queries: 3-5 concise sentences with key points
+   - Complex topics: 8-12 sentences with detailed explanation
+   - Technical subjects: Include examples, formulas, or code snippets as needed
+5. **Visual Clarity**: Use line breaks between major points for easy scanning
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ QUALITY STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✓ Accuracy Over Speed: Verify facts, especially for current events or technical details
+✓ Relevance Filter: Stay strictly on-topic - eliminate all tangential information
+✓ Source Transparency: Always cite sources when using web search results (e.g., "According to [Source]...")
+✓ Practical Value: Include real-world applications, examples, or actionable insights
+✓ Clarity Priority: Use simple language for complex concepts - explain jargon when necessary
+✓ Zero Fluff: No unnecessary introductions, conclusions, or filler phrases
+✓ Educational Depth: For learning queries, provide step-by-step explanations with reasoning
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 STRICT PROHIBITIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ No generic responses or template-like answers
+❌ No repetition of the user's question back to them
+❌ No excessive politeness or conversational fluff ("I'd be happy to...", "Let me help you with...")
+❌ No irrelevant tangents or extra information not asked for
+❌ No uncertain language without good reason ("maybe", "perhaps", "I think")
+❌ No outdated information when current data is available via search
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 EXAMPLE RESPONSE PATTERNS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+For "What is photosynthesis?":
+**Photosynthesis** is the process by which plants convert **light energy into chemical energy** (glucose). 
+
+**Key Process**:
+• **Light Absorption**: Chlorophyll in leaves captures sunlight
+• **Water Splitting**: H₂O molecules are broken down, releasing O₂
+• **Carbon Fixation**: CO₂ is converted into glucose (C₆H₁₂O₆)
+
+**Chemical Equation**: 6CO₂ + 6H₂O + Light → C₆H₁₂O₆ + 6O₂
+
+This process occurs in **chloroplasts** and is essential for life on Earth, producing oxygen and food for nearly all organisms.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REMEMBER: You are not a conversational assistant - you are a precision knowledge delivery system. Every word must serve the user's need for accurate, relevant information.`;
 
       // Build user message
       let userMessage = question;
@@ -110,7 +162,8 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
             const url = new URL(linkUrl);
             setSources([{
               url: linkUrl,
-              domain: url.hostname.replace('www.', '')
+              domain: url.hostname.replace('www.', ''),
+              completed: true
             }]);
           }
         } catch (err) {
@@ -144,7 +197,7 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
         content: userMessage
       });
 
-      // Perform web search if needed
+      // Perform web search if needed with progressive source display
       let searchContext = '';
       if (needsWebSearch) {
         try {
@@ -156,18 +209,21 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
             if (Array.isArray(searchData)) {
               const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
               
-              // Extract sources for display
-              const sourcesArray = validResults.map((item: any) => {
+              // Initialize sources with loading state
+              const initialSources = validResults.map((item: any) => {
                 const url = new URL(item.url);
                 return {
                   url: item.url,
-                  domain: url.hostname.replace('www.', '')
+                  domain: url.hostname.replace('www.', ''),
+                  completed: false
                 };
               });
-              setSources(sourcesArray);
+              setSources(initialSources);
               
-              // Fetch content from search results in parallel
-              const contentPromises = validResults.map(async (item: any) => {
+              // Fetch content from search results sequentially to show progress
+              const fetchedContents: string[] = [];
+              for (let i = 0; i < validResults.length; i++) {
+                const item = validResults[i];
                 try {
                   const controller = new AbortController();
                   const timeoutId = setTimeout(() => controller.abort(), 3000);
@@ -185,16 +241,19 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
                       .trim()
                       .substring(0, 600);
                     
-                    return `[Source: ${item.url}]\n${text}`;
+                    fetchedContents.push(`[Source: ${item.url}]\n${text}`);
                   }
                 } catch (err) {
                   console.error('Failed to fetch page:', err);
                 }
-                return '';
-              });
+                
+                // Mark this source as completed
+                setSources(prev => prev.map((s, idx) => 
+                  idx === i ? { ...s, completed: true } : s
+                ));
+              }
               
-              const contents = await Promise.all(contentPromises);
-              searchContext = contents.filter(c => c).join('\n\n');
+              searchContext = fetchedContents.filter(c => c).join('\n\n');
             }
           }
         } catch (err) {
@@ -295,13 +354,10 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
         />
       </div>
       
-      {/* Enhanced Processing UI */}
+      {/* Enhanced Processing UI - Without Icon */}
       {isLoading && (
         <div className="w-full p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20 shadow-lg">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-              <span className="text-2xl">🤖</span>
-            </div>
             <div className="flex-1">
               <p className="text-base font-semibold text-foreground mb-1">
                 {isSearchingWeb ? '🌐 Searching the web...' : '💭 Processing your question...'}
@@ -324,23 +380,24 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
         </div>
       )}
       
-      {/* Enhanced Sources Display */}
+      {/* Progressive Sources Display with Tick Marks */}
       {isSearchingWeb && sources.length > 0 && isLoading && (
         <div className="w-full p-5 bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl border-2 border-accent/20">
           <p className="text-sm font-semibold mb-3 flex items-center gap-2">
             <span className="text-lg">🔍</span>
-            <span>Found sources for: <span className="text-primary font-bold">{searchQuery}</span></span>
+            <span>Visiting sources: <span className="text-primary font-bold">{searchQuery}</span></span>
           </p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="space-y-2.5">
             {sources.map((site, idx) => (
-              <a 
+              <div 
                 key={idx} 
-                href={site.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center gap-2 px-4 py-2.5 bg-background/80 backdrop-blur-sm rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 shadow-sm hover:shadow-md"
+                className={`group flex items-center gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm rounded-lg border transition-all duration-300 ${
+                  site.completed 
+                    ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' 
+                    : 'border-border animate-pulse'
+                }`}
               >
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <img 
                     src={`https://icons.duckduckgo.com/ip3/${site.domain}.ico`}
                     alt=""
@@ -355,10 +412,25 @@ Be intelligent, efficient, and helpful. Prioritize clarity and accuracy.`;
                       }
                     }}
                   />
-                  <div className="absolute -inset-1 bg-primary/20 rounded-full opacity-0 group-hover:opacity-100 blur transition-opacity duration-200"></div>
                 </div>
-                <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">{site.domain}</span>
-              </a>
+                <a 
+                  href={site.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors truncate"
+                >
+                  {site.domain}
+                </a>
+                {site.completed ? (
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                ) : (
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-primary animate-spin border-t-transparent"></div>
+                )}
+              </div>
             ))}
           </div>
         </div>
