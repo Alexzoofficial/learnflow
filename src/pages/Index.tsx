@@ -134,8 +134,8 @@ const Index = () => {
       )}
       
       <div className="w-full min-h-screen flex flex-col">
-        {/* Mobile-First Header */}
-        <header className="bg-gradient-primary text-primary-foreground shadow-glow sticky top-0 z-30 w-full">
+        {/* Mobile-First Header - Fixed at top */}
+        <header className="sticky top-0 bg-gradient-primary text-primary-foreground shadow-glow z-50 w-full">
           <div className="w-full px-4 py-3 flex items-center justify-between">
             {/* App Title */}
             <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">

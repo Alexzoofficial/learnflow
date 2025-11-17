@@ -192,10 +192,15 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
             </ReactMarkdown>
           </div>
           
-          {/* Sources Section */}
+          {/* Sources Section - With tick marks */}
           {sources.length > 0 && (
             <div className="mt-6 pt-4 border-t border-border">
-              <h4 className="text-sm font-semibold text-muted-foreground mb-3">Sources</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                Sources
+              </h4>
               <div className="space-y-2">
                 {sources.map((source, idx) => (
                   <a
@@ -203,26 +208,27 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors group"
+                    className="flex items-center gap-3 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-all duration-200 group p-2.5 rounded-lg hover:bg-primary/5 border border-transparent hover:border-primary/20"
                   >
-                    <img 
-                      src={`https://icons.duckduckgo.com/ip3/${source.domain}.ico`}
+                    {/* Favicon */}
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`}
                       alt=""
-                      className="w-4 h-4 flex-shrink-0"
-                      loading="eager"
+                      className="w-5 h-5 rounded flex-shrink-0"
                       onError={(e) => {
-                        // Fallback to Google favicon if DDG fails
-                        const target = e.currentTarget as HTMLImageElement;
-                        if (!target.src.includes('google.com')) {
-                          target.src = `https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`;
-                        } else {
-                          target.style.display = 'none';
-                        }
+                        e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23888"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>';
                       }}
                     />
-                    <span className="text-sm text-primary group-hover:underline truncate">
+                    {/* Domain Name */}
+                    <span className="group-hover:underline truncate flex-1 font-medium">
                       {source.domain}
                     </span>
+                    {/* Tick Mark */}
+                    {source.completed && (
+                      <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    )}
                   </a>
                 ))}
               </div>
