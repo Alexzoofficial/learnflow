@@ -17,13 +17,13 @@ async function webSearch(query: string): Promise<string> {
     
     if (!Array.isArray(searchData)) return "No results found.";
     
-    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
+    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 5);
     let results = "";
     
     for (const item of validResults) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const pageResponse = await fetch(item.url, { 
           signal: controller.signal,
@@ -38,7 +38,7 @@ async function webSearch(query: string): Promise<string> {
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim()
-            .substring(0, 600);
+            .substring(0, 2000);
           
           if (text) {
             results += `\n\n[Source: ${item.url}]\n${text}`;
@@ -100,7 +100,7 @@ Your goal is to be a highly intelligent, efficient, and user-friendly assistant.
         type: "function",
         function: {
           name: "web_search",
-          description: "Search the web for current information, latest news, new releases, or any real-time data. Use this when the query asks about recent events, latest updates, new products, current prices, or anything time-sensitive.",
+          description: "Use this tool to find the most current information online, including news, product releases, or any real-time data. It is also useful for topics you don't have information about.",
           parameters: {
             type: "object",
             properties: {
