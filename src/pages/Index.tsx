@@ -12,7 +12,7 @@ import { auth } from '@/integrations/firebase/client';
 import { User } from 'firebase/auth';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 
-import { ExternalLink, User as UserIcon } from 'lucide-react';
+import { ExternalLink, User as UserIcon, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -134,18 +134,30 @@ const Index = () => {
       )}
       
       <div className="w-full min-h-screen flex flex-col">
-        {/* Mobile-First Header - Fixed at top */}
+        {/* Header */}
         <header className="sticky top-0 bg-gradient-primary text-primary-foreground shadow-glow z-50 w-full">
-          <div className="w-full px-4 py-3 flex items-center justify-between">
+          <div className="relative w-full px-4 py-3 flex items-center justify-center lg:justify-between">
+            {/* Hamburger Menu - Mobile */}
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 lg:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-white/20"
+                onClick={toggleSidebar}
+              >
+                {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </Button>
+            </div>
+
             {/* App Title */}
-            <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">
+            <div className="flex items-center">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tracking-tight">
                 LearnFlow
               </h1>
             </div>
-            
-            {/* Header Actions */}
-            <div className="flex items-center space-x-2">
+
+            {/* Header Actions - Mobile: absolute, Desktop: static */}
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center space-x-2 lg:static lg:transform-none">
               {user ? (
                 <ProfileMenu user={user} onLogout={handleLogout} />
               ) : (

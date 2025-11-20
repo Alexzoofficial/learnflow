@@ -29,19 +29,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onToggle, activePage, 
         />
       )}
       
-      {/* Hamburger Menu Button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={cn(
-          "fixed top-4 left-4 z-50 lg:hidden",
-          "text-white hover:bg-white/20"
-        )}
-        onClick={onToggle}
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-      </Button>
-
       {/* Sidebar */}
       <aside className={cn(
         "fixed left-0 top-0 h-full w-72 bg-sidebar z-50 transform transition-transform duration-300 ease-in-out shadow-2xl",
