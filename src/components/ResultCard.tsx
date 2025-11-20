@@ -57,7 +57,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
     ];
 
     let selectedVoice = null;
-    
+
     // Find the best voice from our priority list
     for (const name of priorityVoices) {
       const found = voices.find(v => v.name === name);

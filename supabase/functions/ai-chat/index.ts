@@ -17,7 +17,7 @@ async function webSearch(query: string): Promise<string> {
     
     if (!Array.isArray(searchData)) return "No results found.";
     
-    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 5);
+    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
     let results = "";
     
     for (const item of validResults) {
@@ -40,7 +40,7 @@ async function webSearch(query: string): Promise<string> {
             .trim();
           
           if (text) {
-            let truncatedText = text.substring(0, 2000);
+            let truncatedText = text.substring(0, 1500);
             // Ensure truncation happens at the end of a sentence.
             const lastPeriod = truncatedText.lastIndexOf('.');
             if (lastPeriod !== -1) {
