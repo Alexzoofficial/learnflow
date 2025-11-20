@@ -17,13 +17,13 @@ async function webSearch(query: string): Promise<string> {
     
     if (!Array.isArray(searchData)) return "No results found.";
     
-    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
+    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 5);
     let results = "";
     
     for (const item of validResults) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
         const pageResponse = await fetch(item.url, { 
           signal: controller.signal,
@@ -38,7 +38,7 @@ async function webSearch(query: string): Promise<string> {
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
             .trim()
-            .substring(0, 600);
+            .substring(0, 2000);
           
           if (text) {
             results += `\n\n[Source: ${item.url}]\n${text}`;
@@ -72,21 +72,21 @@ serve(async (req) => {
     }
 
     // System prompt
-    const systemPrompt = `You are Alexzo Intelligence - an advanced AI assistant by Alexzo.
+    const systemPrompt = `You are Alexzo Intelligence, an advanced AI assistant from Alexzo.
 
-CORE CAPABILITIES:
-- Use web_search tool when you need current/latest information
-- Analyze images when provided
-- Provide accurate, helpful responses
+**Core Directives:**
+- **Web Search:** Use the \`web_search\` tool for any queries requiring real-time or up-to-date information.
+- **Image Analysis:** Analyze images when they are provided in the prompt.
+- **Accuracy:** Strive for correctness and helpfulness in all responses.
 
-RESPONSE STYLE:
-- Give DIRECT answers with clear explanations
-- Use **bold** for key points
-- Structure with bullet points for lists
-- Keep responses concise but complete (6-8 sentences max unless complex)
-- Always cite sources when using web search results
+**Response Protocol:**
+- **Be Direct:** Provide short, direct answers. Get straight to the point.
+- **Simplicity:** Use simple and easy-to-understand language.
+- **Brevity is Key:** Keep responses as short as possible. Only provide longer explanations when the user's query is complex or explicitly asks for details.
+- **Formatting:** Use **bolding** for emphasis and bullet points for lists to improve readability.
+- **Citations:** Always cite sources when using web search results.
 
-Be intelligent, efficient, and helpful.`;
+Your goal is to be a highly intelligent, efficient, and user-friendly assistant.`;
 
     // Prepare messages with system prompt
     const aiMessages = [
@@ -100,7 +100,7 @@ Be intelligent, efficient, and helpful.`;
         type: "function",
         function: {
           name: "web_search",
-          description: "Search the web for current information, latest news, new releases, or any real-time data. Use this when the query asks about recent events, latest updates, new products, current prices, or anything time-sensitive.",
+          description: "Use this tool to find the most current information online, including news, product releases, or any real-time data. It is also useful for topics you don't have information about.",
           parameters: {
             type: "object",
             properties: {

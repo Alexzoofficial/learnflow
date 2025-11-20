@@ -30,22 +30,27 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
   const startSpeech = () => {
     if (!result || isPlaying) return;
     
-    // Use a more natural voice if available
-    const voices = speechSynthesis.getVoices();
+    // Use a more natural, realistic male voice if available
+    const voices = window.speechSynthesis.getVoices();
     const preferredVoices = voices.filter(voice => 
       voice.lang.startsWith('en') && 
-      (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Google'))
+      (voice.name.includes('Male') || voice.name.includes('Daniel') || voice.name.includes('Google US English'))
     );
     
     const cleanText = getCleanTextForSpeech(result);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     
+    // Select the best available male voice
+    let selectedVoice = voices.find(v => v.name === 'Google US English');
     if (preferredVoices.length > 0) {
-      utterance.voice = preferredVoices[0];
+      selectedVoice = preferredVoices[0];
+    }
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
     }
     
-    utterance.rate = 0.85; // Slightly slower for better clarity
-    utterance.pitch = 1.1; // Slightly higher pitch for more pleasant sound
+    utterance.rate = 1.0; // Natural pace
+    utterance.pitch = 1.0; // Natural pitch for a male voice
     utterance.volume = 0.9;
     
     utterance.onend = () => {
