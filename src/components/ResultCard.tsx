@@ -71,11 +71,6 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
     if (!selectedVoice) {
       selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Male')) || null;
     }
-    
-    // Final fallback to the first available English voice
-    if (!selectedVoice) {
-      selectedVoice = voices.find(v => v.lang.startsWith('en')) || null;
-    }
 
     const cleanText = getCleanTextForSpeech(result);
     const utterance = new SpeechSynthesisUtterance(cleanText);

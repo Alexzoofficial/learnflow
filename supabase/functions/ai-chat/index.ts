@@ -37,11 +37,16 @@ async function webSearch(query: string): Promise<string> {
             .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
             .replace(/<[^>]+>/g, ' ')
             .replace(/\s+/g, ' ')
-            .trim()
-            .substring(0, 2000);
+            .trim();
           
           if (text) {
-            results += `\n\n[Source: ${item.url}]\n${text}`;
+            let truncatedText = text.substring(0, 2000);
+            // Ensure truncation happens at the end of a sentence.
+            const lastPeriod = truncatedText.lastIndexOf('.');
+            if (lastPeriod !== -1) {
+              truncatedText = truncatedText.substring(0, lastPeriod + 1);
+            }
+            results += `\n\n[Source: ${item.url}]\n${truncatedText}`;
           }
         }
       } catch (err) {
@@ -184,9 +189,22 @@ Your goal is to be a highly intelligent, efficient, and user-friendly assistant.
             messages: messagesWithTool,
           }),
         });
-        
+
         if (!response.ok) {
-          throw new Error("Second AI call failed");
+          if (response.status === 400) {
+            // Check for content filter error from the AI provider
+            const errorData = await response.json().catch(() => ({}));
+            if (errorData?.details?.error?.code === 'content_filter') {
+              return new Response(
+                JSON.stringify({
+                  error: "The content from the web search was blocked by the safety filter. Please try a different search query."
+                }),
+                { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          }
+          console.error("Second AI call failed:", await response.text());
+          throw new Error("The AI service failed to process the request after a web search.");
         }
         
         const finalData = await response.json();
