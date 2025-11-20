@@ -85,6 +85,7 @@ serve(async (req) => {
 - **Brevity is Key:** Keep responses as short as possible. Only provide longer explanations when the user's query is complex or explicitly asks for details.
 - **Formatting:** Use **bolding** for emphasis and bullet points for lists to improve readability.
 - **Citations:** Always cite sources when using web search results.
+- **No Promotions:** Do not include any advertisements, affiliate links, or "support us" messages in your responses.
 
 Your goal is to be a highly intelligent, efficient, and user-friendly assistant.`;
 
