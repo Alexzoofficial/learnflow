@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Lightbulb, Volume2, VolumeX, Copy, Check } from 'lucide-react';
@@ -17,7 +17,25 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
   const [isPlaying, setIsPlaying] = useState(false);
   const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
   const [copied, setCopied] = useState(false);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const loadVoices = () => {
+      setVoices(window.speechSynthesis.getVoices());
+    };
+
+    // The voices are loaded asynchronously, so we need to listen for the voiceschanged event.
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+
+    loadVoices(); // Initial load
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   const getCleanTextForSpeech = (text: string) => {
     return text
@@ -28,29 +46,46 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
   };
 
   const startSpeech = () => {
-    if (!result || isPlaying) return;
+    if (!result || isPlaying || voices.length === 0) return;
+
+    // Prioritized list of high-quality male voices
+    const priorityVoices = [
+      'Microsoft David - English (United States)',
+      'Google UK English Male',
+      'Daniel',
+      'Google US English',
+    ];
+
+    let selectedVoice = null;
     
-    // Use a more natural, realistic male voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoices = voices.filter(voice => 
-      voice.lang.startsWith('en') && 
-      (voice.name.includes('Male') || voice.name.includes('Daniel') || voice.name.includes('Google US English'))
-    );
+    // Find the best voice from our priority list
+    for (const name of priorityVoices) {
+      const found = voices.find(v => v.name === name);
+      if (found) {
+        selectedVoice = found;
+        break;
+      }
+    }
+
+    // Fallback to any English male voice
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Male')) || null;
+    }
     
+    // Final fallback to the first available English voice
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.startsWith('en')) || null;
+    }
+
     const cleanText = getCleanTextForSpeech(result);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     
-    // Select the best available male voice
-    let selectedVoice = voices.find(v => v.name === 'Google US English');
-    if (preferredVoices.length > 0) {
-      selectedVoice = preferredVoices[0];
-    }
     if (selectedVoice) {
       utterance.voice = selectedVoice;
     }
     
     utterance.rate = 1.0; // Natural pace
-    utterance.pitch = 1.0; // Natural pitch for a male voice
+    utterance.pitch = 1.0; // Natural pitch
     utterance.volume = 0.9;
     
     utterance.onend = () => {
