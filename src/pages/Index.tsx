@@ -135,7 +135,7 @@ const Index = () => {
       
       <div className="w-full min-h-screen flex flex-col">
         {/* Header */}
-        <header className="sticky top-0 bg-gradient-primary text-primary-foreground shadow-glow z-50 w-full">
+        <header className="sticky top-0 bg-gradient-primary text-primary-foreground shadow-glow z-50 w-full transform-gpu">
           <div className="relative w-full px-4 py-3 flex items-center justify-center lg:justify-between">
             {/* Hamburger Menu - Mobile */}
             <div className="absolute left-4 top-1/2 -translate-y-1/2 lg:hidden">

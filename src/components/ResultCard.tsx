@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Lightbulb, Volume2, VolumeX, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
 import { useToast } from '@/hooks/use-toast';
 
 interface ResultCardProps {
@@ -207,7 +210,8 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
         <CardContent className="pt-0 px-4 sm:px-6">
           <div className="prose prose-gray max-w-none dark:prose-invert prose-sm sm:prose-base text-foreground leading-relaxed">
             <ReactMarkdown 
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 h1: ({children}) => <h1 className="text-xl sm:text-2xl font-bold mb-4 text-primary">{children}</h1>,
                 h2: ({children}) => <h2 className="text-lg sm:text-xl font-bold mb-3 text-primary">{children}</h2>,
