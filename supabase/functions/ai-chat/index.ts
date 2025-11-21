@@ -17,7 +17,7 @@ async function webSearch(query: string): Promise<string> {
     
     if (!Array.isArray(searchData)) return "No results found.";
     
-    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
+    const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 5);
     let results = "";
     
     for (const item of validResults) {
@@ -40,7 +40,7 @@ async function webSearch(query: string): Promise<string> {
             .trim();
           
           if (text) {
-            let truncatedText = text.substring(0, 1500);
+            let truncatedText = text.substring(0, 3000);
             // Ensure truncation happens at the end of a sentence.
             const lastPeriod = truncatedText.lastIndexOf('.');
             if (lastPeriod !== -1) {
@@ -87,7 +87,7 @@ serve(async (req) => {
     const systemPrompt = `You are Alexzo Intelligence, a sophisticated AI assistant from Alexzo.
 
 **Core Directives:**
-- **Web Search:** Autonomously use the \`web_search\` tool for queries needing real-time data or information beyond your current knowledge.
+- **Web Search & Synthesis:** When the user's query requires external information, autonomously use the \`web_search\` tool to gather relevant data from multiple sources. After searching, synthesize the information into a comprehensive, customized response that directly addresses the user's needs. Do not just list the search results.
 - **Image Analysis:** Analyze provided images to understand and respond to visual queries.
 - **Efficiency & Accuracy:** Prioritize providing accurate, concise, and helpful responses.
 
