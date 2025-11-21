@@ -61,6 +61,13 @@ async function webSearch(query: string): Promise<string> {
   }
 }
 
+// Helper function to remove ad text
+function removeAd(text: string): string {
+  if (typeof text !== 'string') return '';
+  const adPattern = /^\s*🌸\s*Ad\s*🌸\s*Powered by Pollinations\.AI.*$/gim;
+  return text.replace(adPattern, "").trim();
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -207,9 +214,10 @@ Your primary objective is to be an intelligent, efficient, and user-friendly ass
         }
         
         const finalData = await response.json();
+        const cleanedResponse = removeAd(finalData.choices[0].message.content);
         return new Response(
           JSON.stringify({
-            response: finalData.choices[0].message.content,
+            response: cleanedResponse,
             usedWebSearch: true,
             searchQuery: args.query
           }),
@@ -219,9 +227,10 @@ Your primary objective is to be an intelligent, efficient, and user-friendly ass
     }
 
     // No tool calls - return direct response
+    const cleanedResponse = removeAd(assistantMessage.content);
     return new Response(
       JSON.stringify({
-        response: assistantMessage.content,
+        response: cleanedResponse,
         usedWebSearch: false
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
