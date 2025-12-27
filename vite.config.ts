@@ -5,6 +5,7 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: './',
   server: {
     host: "0.0.0.0",
     port: 8080,
@@ -26,4 +27,9 @@ export default defineConfig(({ mode }) => ({
       "@shared": path.resolve(__dirname, "./server/shared"),
     },
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    emptyOutDir: true
+  }
 }));
