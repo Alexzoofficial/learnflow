@@ -58,10 +58,10 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     }
 
     try {
-      // Optimized system prompt under 7000 chars
-      const systemPrompt = `You are LearnFlow powered by Alexzo Intelligence - an advanced AI assistant.
+      // Optimized system prompt - Powered by Pollinations.ai
+      const systemPrompt = `You are LearnFlow - an advanced AI learning assistant powered by Pollinations.ai.
 
-🎯 **Identity**: LearnFlow powered by Alexzo Intelligence
+🎯 **Identity**: LearnFlow AI Assistant
 📌 **Mission**: Deliver precise, actionable answers with zero fluff.
 
 🔥 **Capabilities**:
@@ -92,7 +92,6 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
 ❌ Repeat user's question
 ❌ Excessive politeness ("I'd be happy to...")
 ❌ Irrelevant info
-❌ Reveal name as "Alexzo Intelligence" alone
 
 ✨ **Example Formats**:
 
@@ -146,9 +145,21 @@ Subject: ${activeSubject}`;
         }
       }
 
-      // Detect if web search is needed
-      const searchKeywords = ['latest', 'current', 'recent', 'new', 'today', 'now', '2024', '2025', 'update', 'news'];
-      const needsWebSearch = searchKeywords.some(keyword => question.toLowerCase().includes(keyword));
+      // Smart web search detection - only search when truly needed
+      const lowerQuestion = question.toLowerCase();
+      const searchKeywords = ['latest', 'current', 'recent', 'today', 'now', '2024', '2025', 'update', 'news', 'price', 'stock', 'weather', 'score', 'live', 'happening', 'trending'];
+      const factualKeywords = ['who is', 'what happened', 'when did', 'where is', 'how much', 'results', 'winner', 'election'];
+      
+      // Check if question needs real-time/factual data
+      const hasSearchKeyword = searchKeywords.some(keyword => lowerQuestion.includes(keyword));
+      const hasFactualKeyword = factualKeywords.some(keyword => lowerQuestion.includes(keyword));
+      
+      // Exclude general knowledge questions that don't need web search
+      const generalKnowledgePatterns = ['what is', 'explain', 'how to', 'why does', 'define', 'meaning of', 'difference between', 'compare'];
+      const isGeneralKnowledge = generalKnowledgePatterns.some(pattern => lowerQuestion.includes(pattern)) && !hasSearchKeyword;
+      
+      // Only do web search when really needed
+      const needsWebSearch = (hasSearchKeyword || hasFactualKeyword) && !isGeneralKnowledge;
       
       if (needsWebSearch) {
         setIsSearchingWeb(true);
@@ -249,7 +260,7 @@ Subject: ${activeSubject}`;
         });
       }
 
-      // Call Pollinations.ai API with proper error handling
+      // Call Pollinations.ai searchGPT API with proper error handling
       const response = await fetch('https://text.pollinations.ai/', {
         method: 'POST',
         headers: {
@@ -257,7 +268,7 @@ Subject: ${activeSubject}`;
         },
         body: JSON.stringify({
           messages,
-          model: 'openai', // Supports images and better responses
+          model: 'searchgpt', // Using Pollinations.ai searchGPT for better responses
           seed: Math.floor(Math.random() * 1000000),
           jsonMode: false
         }),
