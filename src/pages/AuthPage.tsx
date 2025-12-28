@@ -64,10 +64,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onClose }) =>
             </Button>
           )}
           <CardTitle className="text-2xl font-bold">
-            Welcome to LearnFlow
+            Welcome to Alexzo Intelligence
           </CardTitle>
           <p className="text-muted-foreground mt-2">
-            Your AI-powered education assistant
+            Your AI-powered learning assistant
           </p>
         </CardHeader>
         <CardContent className="space-y-4">

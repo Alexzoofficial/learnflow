@@ -58,10 +58,10 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     }
 
     try {
-      // Optimized system prompt - Powered by Pollinations.ai
-      const systemPrompt = `You are LearnFlow - an advanced AI learning assistant powered by Pollinations.ai.
+      // Optimized system prompt - Alexzo Intelligence
+      const systemPrompt = `You are LearnFlow powered by Alexzo Intelligence - an advanced AI assistant.
 
-🎯 **Identity**: LearnFlow AI Assistant
+🎯 **Identity**: LearnFlow powered by Alexzo Intelligence
 📌 **Mission**: Deliver precise, actionable answers with zero fluff.
 
 🔥 **Capabilities**:
