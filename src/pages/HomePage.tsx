@@ -268,7 +268,7 @@ Subject: ${activeSubject}`;
         },
         body: JSON.stringify({
           messages,
-          model: 'searchgpt', // Using Pollinations.ai searchGPT for better responses
+          model: 'openai', // Free tier model
           seed: Math.floor(Math.random() * 1000000),
           jsonMode: false
         }),
