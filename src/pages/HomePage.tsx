@@ -6,7 +6,38 @@ import { FeatureCards } from '@/components/FeatureCards';
 import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
-// Removed Google AI - using pollinations.ai instead
+// Smart Web Search API (same as vanilla app)
+const SEARCH_API = atob('aHR0cHM6Ly9iaXR0ZXItY2hlcnJ5LWZlM2Euc2FydGhha3BhbmRleTU1MzU1LndvcmtlcnMuZGV2Lw==');
+
+// Check if query needs web search - AI decides automatically
+const needsWebSearchCheck = (query: string): boolean => {
+  const keywords = ['latest', 'current', 'today', 'news', 'recent', 'now', '2024', '2025', '2026', 'price', 'weather', 'score', 'update', 'trending', 'live', 'happening', 'stock', 'match', 'election', 'result'];
+  const queryLower = query.toLowerCase();
+  return keywords.some(k => queryLower.includes(k));
+};
+
+// Web search function
+const performWebSearch = async (query: string): Promise<{title: string, description: string, url: string}[] | null> => {
+  try {
+    const response = await fetch(SEARCH_API + '?query=' + encodeURIComponent(query));
+    if (!response.ok) return null;
+    const data = await response.json();
+    console.log('Search API response:', data);
+    
+    // Handle different response formats
+    const results = data?.results || data?.data || data?.organic_results || (Array.isArray(data) ? data : null);
+    if (!results || results.length === 0) return null;
+    
+    return results.slice(0, 5).map((r: any) => ({
+      title: r.title || r.name || 'Result',
+      description: r.snippet || r.description || r.content || r.text || '',
+      url: r.url || r.link || ''
+    }));
+  } catch (error) {
+    console.error('Search API error:', error);
+    return null;
+  }
+};
 
 interface HomePageProps {
   user?: any;
@@ -145,21 +176,8 @@ Subject: ${activeSubject}`;
         }
       }
 
-      // Smart web search detection - only search when truly needed
-      const lowerQuestion = question.toLowerCase();
-      const searchKeywords = ['latest', 'current', 'recent', 'today', 'now', '2024', '2025', 'update', 'news', 'price', 'stock', 'weather', 'score', 'live', 'happening', 'trending'];
-      const factualKeywords = ['who is', 'what happened', 'when did', 'where is', 'how much', 'results', 'winner', 'election'];
-      
-      // Check if question needs real-time/factual data
-      const hasSearchKeyword = searchKeywords.some(keyword => lowerQuestion.includes(keyword));
-      const hasFactualKeyword = factualKeywords.some(keyword => lowerQuestion.includes(keyword));
-      
-      // Exclude general knowledge questions that don't need web search
-      const generalKnowledgePatterns = ['what is', 'explain', 'how to', 'why does', 'define', 'meaning of', 'difference between', 'compare'];
-      const isGeneralKnowledge = generalKnowledgePatterns.some(pattern => lowerQuestion.includes(pattern)) && !hasSearchKeyword;
-      
-      // Only do web search when really needed
-      const needsWebSearch = (hasSearchKeyword || hasFactualKeyword) && !isGeneralKnowledge;
+      // Smart web search detection - AI decides when to search
+      const needsWebSearch = needsWebSearchCheck(question);
       
       if (needsWebSearch) {
         setIsSearchingWeb(true);
@@ -188,64 +206,43 @@ Subject: ${activeSubject}`;
         });
       }
 
-      // Perform web search if needed with progressive source display
+      // Perform web search using same API as vanilla app
       let searchContext = '';
       if (needsWebSearch) {
         try {
-          const searchQuery = encodeURIComponent(question);
-          const searchResponse = await fetch(`https://whoogle-bbso.onrender.com/search?q=${searchQuery}&format=json`);
+          const searchResults = await performWebSearch(question);
           
-          if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            if (Array.isArray(searchData)) {
-              const validResults = searchData.filter((item: any) => item.url?.startsWith('http')).slice(0, 3);
-              
-              // Initialize sources with loading state
-              const initialSources = validResults.map((item: any) => {
-                const url = new URL(item.url);
-                return {
-                  url: item.url,
-                  domain: url.hostname.replace('www.', ''),
-                  completed: false
-                };
-              });
-              setSources(initialSources);
-              
-              // Fetch content from search results sequentially to show progress
-              const fetchedContents: string[] = [];
-              for (let i = 0; i < validResults.length; i++) {
-                const item = validResults[i];
+          if (searchResults && searchResults.length > 0) {
+            // Initialize sources with loading state
+            const initialSources = searchResults
+              .filter(r => r.url?.startsWith('http'))
+              .slice(0, 5)
+              .map((item) => {
                 try {
-                  const controller = new AbortController();
-                  const timeoutId = setTimeout(() => controller.abort(), 3000);
-                  
-                  const pageResponse = await fetch(item.url, { signal: controller.signal });
-                  clearTimeout(timeoutId);
-                  
-                  if (pageResponse.ok) {
-                    const html = await pageResponse.text();
-                    const text = html
-                      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-                      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-                      .replace(/<[^>]+>/g, ' ')
-                      .replace(/\s+/g, ' ')
-                      .trim()
-                      .substring(0, 600);
-                    
-                    fetchedContents.push(`[Source: ${item.url}]\n${text}`);
-                  }
-                } catch (err) {
-                  console.error('Failed to fetch page:', err);
+                  const url = new URL(item.url);
+                  return {
+                    url: item.url,
+                    domain: url.hostname.replace('www.', ''),
+                    completed: false
+                  };
+                } catch {
+                  return null;
                 }
-                
-                // Mark this source as completed
-                setSources(prev => prev.map((s, idx) => 
-                  idx === i ? { ...s, completed: true } : s
-                ));
-              }
+              })
+              .filter(Boolean) as {url: string, domain: string, completed: boolean}[];
+            
+            setSources(initialSources);
+            
+            // Build search context from results
+            searchContext = '\n\nWeb Search Results:\n';
+            searchResults.forEach((r, i) => {
+              searchContext += `${i+1}. ${r.title}: ${r.description}${r.url ? ' ('+r.url+')' : ''}\n`;
               
-              searchContext = fetchedContents.filter(c => c).join('\n\n');
-            }
+              // Mark source as completed
+              setSources(prev => prev.map((s, idx) => 
+                idx === i ? { ...s, completed: true } : s
+              ));
+            });
           }
         } catch (err) {
           console.error('Web search failed:', err);
