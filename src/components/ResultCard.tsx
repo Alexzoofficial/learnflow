@@ -224,50 +224,77 @@ export const ResultCard: React.FC<ResultCardProps> = ({ isLoading, result, error
                 em: ({children}) => <em className="italic">{children}</em>,
                 blockquote: ({children}) => <blockquote className="border-l-4 border-primary/30 pl-4 italic my-4">{children}</blockquote>,
                 code: ({children}) => <code className="bg-muted px-1 py-0.5 rounded text-xs sm:text-sm font-mono">{children}</code>,
-                pre: ({children}) => <pre className="bg-muted p-3 rounded-lg overflow-x-auto text-xs sm:text-sm">{children}</pre>
+                pre: ({children}) => <pre className="bg-muted p-3 rounded-lg overflow-x-auto text-xs sm:text-sm">{children}</pre>,
+                // Responsive table components
+                table: ({children}) => (
+                  <div className="overflow-x-auto -mx-4 sm:mx-0 my-4">
+                    <div className="inline-block min-w-full align-middle">
+                      <table className="min-w-full divide-y divide-border border border-border rounded-lg text-xs sm:text-sm">
+                        {children}
+                      </table>
+                    </div>
+                  </div>
+                ),
+                thead: ({children}) => <thead className="bg-muted/50">{children}</thead>,
+                tbody: ({children}) => <tbody className="divide-y divide-border bg-background">{children}</tbody>,
+                tr: ({children}) => <tr className="hover:bg-muted/30 transition-colors">{children}</tr>,
+                th: ({children}) => <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider whitespace-nowrap">{children}</th>,
+                td: ({children}) => <td className="px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-muted-foreground whitespace-normal break-words max-w-[120px] sm:max-w-none">{children}</td>
               }}
             >
               {result}
             </ReactMarkdown>
           </div>
           
-          {/* Sources Section - With tick marks */}
+          {/* Enhanced Sources Section - Clickable Cards */}
           {sources.length > 0 && (
             <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                 </svg>
-                Sources
+                Sources ({sources.length})
               </h4>
-              <div className="space-y-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                 {sources.map((source, idx) => (
                   <a
                     key={idx}
                     href={source.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-3 text-xs sm:text-sm text-muted-foreground hover:text-primary transition-all duration-200 group p-2.5 rounded-lg hover:bg-primary/5 border border-transparent hover:border-primary/20"
+                    className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border hover:border-primary/40 hover:shadow-md hover:scale-[1.02] transition-all duration-300 group"
                   >
                     {/* Favicon */}
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`}
-                      alt=""
-                      className="w-5 h-5 rounded flex-shrink-0"
-                      onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23888"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>';
-                      }}
-                    />
-                    {/* Domain Name */}
-                    <span className="group-hover:underline truncate flex-1 font-medium">
-                      {source.domain}
-                    </span>
-                    {/* Tick Mark */}
-                    {source.completed && (
-                      <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                    )}
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={`https://www.google.com/s2/favicons?domain=${source.domain}&sz=32`}
+                        alt=""
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg shadow-sm"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23888"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>';
+                        }}
+                      />
+                      {source.completed && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center border-2 border-background">
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    {/* Domain Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors truncate">
+                        {source.domain}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {source.url.length > 40 ? source.url.slice(0, 40) + '...' : source.url}
+                      </p>
+                    </div>
+                    {/* Arrow Icon */}
+                    <svg className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                   </a>
                 ))}
               </div>
