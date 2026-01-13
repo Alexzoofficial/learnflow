@@ -16,7 +16,7 @@ const needsWebSearchCheck = (query: string): boolean => {
   return keywords.some(k => queryLower.includes(k));
 };
 
-// Web search function
+// Web search function - handles nested response format
 const performWebSearch = async (query: string): Promise<{title: string, description: string, url: string}[] | null> => {
   try {
     const response = await fetch(SEARCH_API + '?query=' + encodeURIComponent(query));
@@ -24,8 +24,21 @@ const performWebSearch = async (query: string): Promise<{title: string, descript
     const data = await response.json();
     console.log('Search API response:', data);
     
-    // Handle different response formats
-    const results = data?.results || data?.data || data?.organic_results || (Array.isArray(data) ? data : null);
+    // Handle nested response format: data.data.results or data.results or direct array
+    let results: any[] | null = null;
+    
+    if (data?.data?.results && Array.isArray(data.data.results)) {
+      results = data.data.results;
+    } else if (data?.results && Array.isArray(data.results)) {
+      results = data.results;
+    } else if (data?.data && Array.isArray(data.data)) {
+      results = data.data;
+    } else if (data?.organic_results && Array.isArray(data.organic_results)) {
+      results = data.organic_results;
+    } else if (Array.isArray(data)) {
+      results = data;
+    }
+    
     if (!results || results.length === 0) return null;
     
     return results.slice(0, 5).map((r: any) => ({
