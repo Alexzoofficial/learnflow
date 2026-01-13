@@ -32,8 +32,11 @@ async function _ws(q) {
     try {
         const r = await fetch(_c.e + '?query=' + encodeURIComponent(q));
         if (!r.ok) return null;
-        return await r.json();
+        const data = await r.json();
+        console.log('Search response:', data); // Debug log
+        return data;
     } catch (e) {
+        console.error('Search error:', e);
         return null;
     }
 }
@@ -62,10 +65,15 @@ async function submitQuestion(){
         // Check if web search is needed
         if (_nws(q)) {
             const searchData = await _ws(q);
-            if (searchData && searchData.results) {
+            // Handle different response formats
+            const results = searchData?.results || searchData?.data || searchData?.organic_results || (Array.isArray(searchData) ? searchData : null);
+            if (results && results.length > 0) {
                 let searchContext = '\n\nWeb Search Results:\n';
-                searchData.results.slice(0, 5).forEach((r, i) => {
-                    searchContext += `${i+1}. ${r.title || 'Result'}: ${r.snippet || r.description || ''}\n`;
+                results.slice(0, 5).forEach((r, i) => {
+                    const title = r.title || r.name || 'Result';
+                    const desc = r.snippet || r.description || r.content || r.text || '';
+                    const url = r.url || r.link || '';
+                    searchContext += `${i+1}. ${title}: ${desc}${url ? ' ('+url+')' : ''}\n`;
                 });
                 systemContent += searchContext + '\nUse these search results to provide accurate, up-to-date information.';
             }
