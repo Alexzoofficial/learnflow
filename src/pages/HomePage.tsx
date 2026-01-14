@@ -6,6 +6,7 @@ import { FeatureCards } from '@/components/FeatureCards';
 import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
+import { OfflinePage } from '@/pages/OfflinePage';
 // Smart Web Search API (same as vanilla app)
 const SEARCH_API = atob('aHR0cHM6Ly9iaXR0ZXItY2hlcnJ5LWZlM2Euc2FydGhha3BhbmRleTU1MzU1LndvcmtlcnMuZGV2Lw==');
 
@@ -360,163 +361,146 @@ Subject: ${activeSubject}`;
 
   return (
     <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Offline Banner */}
+      {/* Full Offline Page */}
       {isOffline && (
-        <div className="w-full p-4 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-2 border-red-500/30 rounded-xl shadow-lg animate-fade-in">
-          <div className="flex items-center gap-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <h3 className="text-base font-bold text-red-600 dark:text-red-400">
-                📡 No Internet Connection
-              </h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Please check your Wi-Fi or mobile data and try again.
-              </p>
-            </div>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              Retry
-            </button>
-          </div>
-        </div>
+        <OfflinePage onRetry={() => window.location.reload()} />
       )}
 
-      {/* Request Limit Banner for unauthenticated users */}
-      {!user && !isOffline && (
-        <RequestLimitBanner 
-          remainingRequests={remainingRequests}
-          isLimitReached={isLimitReached}
-          onShowAuth={onShowAuth || (() => {})}
-        />
-      )}
-      
-      {/* Subject Tabs - Mobile Optimized */}
-      <div className="w-full">
-        <SubjectTabs 
-          activeSubject={activeSubject} 
-          onSubjectChange={setActiveSubject} 
-        />
-      </div>
-      
-      {/* Question Input - Full Width Mobile */}
-      <div className="w-full">
-        <QuestionInput 
-          onSubmit={handleQuestionSubmit} 
-          isLoading={isLoading}
-          disabled={isOffline || (!user && isLimitReached)}
-        />
-      </div>
-      
-      {/* Enhanced Processing UI with Spinning Loader */}
-      {isLoading && (
-        <div className="w-full p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20 shadow-lg animate-fade-in">
-          <div className="flex items-center gap-4">
-            {/* Spinning Circle Loader */}
-            <div className="flex-shrink-0 relative">
-              <div className="w-12 h-12 rounded-full border-4 border-primary/20"></div>
-              <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-            </div>
-            
-            <div className="flex-1">
-              <p className="text-base font-semibold text-foreground mb-1">
-                {isSearchingWeb ? '🌐 Searching the web...' : '💭 Processing your question...'}
-              </p>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {isSearchingWeb ? 'Finding latest information from the web' : 'AI is analyzing your request'}
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Show content only when online */}
+      {!isOffline && (
+        <>
+          {/* Request Limit Banner for unauthenticated users */}
+          {!user && (
+            <RequestLimitBanner 
+              remainingRequests={remainingRequests}
+              isLimitReached={isLimitReached}
+              onShowAuth={onShowAuth || (() => {})}
+            />
+          )}
           
-          {/* Progress bar */}
-          <div className="mt-4 w-full bg-primary/10 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-primary/50 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+          {/* Subject Tabs - Mobile Optimized */}
+          <div className="w-full">
+            <SubjectTabs 
+              activeSubject={activeSubject} 
+              onSubjectChange={setActiveSubject} 
+            />
           </div>
-        </div>
-      )}
       
-      {/* Progressive Sources Display with Tick Marks */}
-      {isSearchingWeb && sources.length > 0 && isLoading && (
-        <div className="w-full p-5 bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl border-2 border-accent/20">
-          <p className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <span className="text-lg">🔍</span>
-            <span>Visiting sources: <span className="text-primary font-bold">{searchQuery}</span></span>
-          </p>
-          <div className="space-y-2.5">
-            {sources.map((site, idx) => (
-              <div 
-                key={idx} 
-                className={`group flex items-center gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm rounded-lg border transition-all duration-300 ${
-                  site.completed 
-                    ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' 
-                    : 'border-border animate-pulse'
-                }`}
-              >
-                <div className="relative flex-shrink-0">
-                  <img 
-                    src={`https://icons.duckduckgo.com/ip3/${site.domain}.ico`}
-                    alt=""
-                    className="w-5 h-5 rounded"
-                    loading="eager"
-                    onError={(e) => {
-                      const target = e.currentTarget as HTMLImageElement;
-                      if (!target.src.includes('google.com')) {
-                        target.src = `https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`;
-                      } else {
-                        target.style.display = 'none';
-                      }
-                    }}
-                  />
+          {/* Question Input - Full Width Mobile */}
+          <div className="w-full">
+            <QuestionInput 
+              onSubmit={handleQuestionSubmit} 
+              isLoading={isLoading}
+              disabled={isOffline || (!user && isLimitReached)}
+            />
+          </div>
+      
+          {/* Enhanced Processing UI with Spinning Loader */}
+          {isLoading && (
+            <div className="w-full p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20 shadow-lg animate-fade-in">
+              <div className="flex items-center gap-4">
+                {/* Spinning Circle Loader */}
+                <div className="flex-shrink-0 relative">
+                  <div className="w-12 h-12 rounded-full border-4 border-primary/20"></div>
+                  <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
                 </div>
-                <a 
-                  href={site.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors truncate"
-                >
-                  {site.domain}
-                </a>
-                {site.completed ? (
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
+            
+                <div className="flex-1">
+                  <p className="text-base font-semibold text-foreground mb-1">
+                    {isSearchingWeb ? '🌐 Searching the web...' : '💭 Processing your question...'}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1">
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {isSearchingWeb ? 'Finding latest information from the web' : 'AI is analyzing your request'}
+                    </p>
                   </div>
-                ) : (
-                  <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-primary animate-spin border-t-transparent"></div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Result Card - Mobile Optimized */}
-      <div className="w-full">
-        <ResultCard 
-          isLoading={isLoading} 
-          result={result} 
-          error={error}
-          sources={sources}
-        />
-      </div>
+          
+              {/* Progress bar */}
+              <div className="mt-4 w-full bg-primary/10 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-primary to-primary/50 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+              </div>
+            </div>
+          )}
       
-      {/* Feature Cards - Mobile Responsive Grid */}
-      <div className="w-full">
-        <FeatureCards />
-      </div>
+          {/* Progressive Sources Display with Tick Marks */}
+          {isSearchingWeb && sources.length > 0 && isLoading && (
+            <div className="w-full p-5 bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl border-2 border-accent/20">
+              <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <span className="text-lg">🔍</span>
+                <span>Visiting sources: <span className="text-primary font-bold">{searchQuery}</span></span>
+              </p>
+              <div className="space-y-2.5">
+                {sources.map((site, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`group flex items-center gap-3 px-4 py-2.5 bg-background/80 backdrop-blur-sm rounded-lg border transition-all duration-300 ${
+                      site.completed 
+                        ? 'border-green-500/50 bg-green-50/50 dark:bg-green-950/20' 
+                        : 'border-border animate-pulse'
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img 
+                        src={`https://icons.duckduckgo.com/ip3/${site.domain}.ico`}
+                        alt=""
+                        className="w-5 h-5 rounded"
+                        loading="eager"
+                        onError={(e) => {
+                          const target = e.currentTarget as HTMLImageElement;
+                          if (!target.src.includes('google.com')) {
+                            target.src = `https://www.google.com/s2/favicons?domain=${site.domain}&sz=32`;
+                          } else {
+                            target.style.display = 'none';
+                          }
+                        }}
+                      />
+                    </div>
+                    <a 
+                      href={site.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors truncate"
+                    >
+                      {site.domain}
+                    </a>
+                    {site.completed ? (
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-primary animate-spin border-t-transparent"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Result Card - Mobile Optimized */}
+          <div className="w-full">
+            <ResultCard 
+              isLoading={isLoading} 
+              result={result} 
+              error={error}
+              sources={sources}
+            />
+          </div>
+      
+          {/* Feature Cards - Mobile Responsive Grid */}
+          <div className="w-full">
+            <FeatureCards />
+          </div>
+        </>
+      )}
     </div>
   );
 };
