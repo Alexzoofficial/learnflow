@@ -65,8 +65,37 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [sources, setSources] = useState<{url: string, domain: string, completed: boolean}[]>([]);
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
+
+  // Offline detection
+  React.useEffect(() => {
+    const handleOnline = () => {
+      setIsOffline(false);
+      toast({
+        title: "🌐 Back Online!",
+        description: "Your internet connection has been restored.",
+      });
+    };
+    
+    const handleOffline = () => {
+      setIsOffline(true);
+      toast({
+        title: "📡 No Internet",
+        description: "Please check your internet connection.",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [toast]);
 
   const handleQuestionSubmit = async (question: string, image?: File, linkUrl?: string, includeRelatedSources: boolean = false) => {
     if (!question.trim() && !image) return;
@@ -331,8 +360,35 @@ Subject: ${activeSubject}`;
 
   return (
     <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Offline Banner */}
+      {isOffline && (
+        <div className="w-full p-4 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-2 border-red-500/30 rounded-xl shadow-lg animate-fade-in">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-red-600 dark:text-red-400">
+                📡 No Internet Connection
+              </h3>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Please check your Wi-Fi or mobile data and try again.
+              </p>
+            </div>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Request Limit Banner for unauthenticated users */}
-      {!user && (
+      {!user && !isOffline && (
         <RequestLimitBanner 
           remainingRequests={remainingRequests}
           isLimitReached={isLimitReached}
@@ -353,23 +409,29 @@ Subject: ${activeSubject}`;
         <QuestionInput 
           onSubmit={handleQuestionSubmit} 
           isLoading={isLoading}
-          disabled={!user && isLimitReached}
+          disabled={isOffline || (!user && isLimitReached)}
         />
       </div>
       
-      {/* Enhanced Processing UI - Without Icon */}
+      {/* Enhanced Processing UI with Spinning Loader */}
       {isLoading && (
-        <div className="w-full p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20 shadow-lg">
-          <div className="flex items-center gap-3 mb-3">
+        <div className="w-full p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20 shadow-lg animate-fade-in">
+          <div className="flex items-center gap-4">
+            {/* Spinning Circle Loader */}
+            <div className="flex-shrink-0 relative">
+              <div className="w-12 h-12 rounded-full border-4 border-primary/20"></div>
+              <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            </div>
+            
             <div className="flex-1">
               <p className="text-base font-semibold text-foreground mb-1">
                 {isSearchingWeb ? '🌐 Searching the web...' : '💭 Processing your question...'}
               </p>
               <div className="flex items-center gap-2">
                 <div className="flex gap-1">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                  <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {isSearchingWeb ? 'Finding latest information from the web' : 'AI is analyzing your request'}
@@ -377,8 +439,10 @@ Subject: ${activeSubject}`;
               </div>
             </div>
           </div>
-          <div className="w-full bg-primary/10 rounded-full h-1.5 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-primary to-primary/50 animate-[shimmer_2s_infinite]" style={{ width: '100%' }}></div>
+          
+          {/* Progress bar */}
+          <div className="mt-4 w-full bg-primary/10 rounded-full h-1.5 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-primary to-primary/50 rounded-full animate-pulse" style={{ width: '60%' }}></div>
           </div>
         </div>
       )}
