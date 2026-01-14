@@ -2,9 +2,12 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { FileText, Image, Upload, X, Mic, Link, Paperclip, File } from 'lucide-react';
+import { FileText, Image, Upload, X, Mic, Link, Paperclip, File, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VoiceRecorder } from './VoiceRecorder';
+import { compressImage } from '@/utils/imageCompression';
+import { useImageLimit } from '@/hooks/useImageLimit';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuestionInputProps {
   onSubmit: (question: string, image?: File, linkUrl?: string, includeRelatedSources?: boolean) => void;
@@ -21,8 +24,11 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
   const [isDragOver, setIsDragOver] = useState(false);
   const [includeRelatedSources, setIncludeRelatedSources] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const { remainingImages, isImageLimitReached, incrementImageCount, dailyImageLimit } = useImageLimit();
 
   const handleSubmit = () => {
     if (mode === 'text' && question.trim()) {
@@ -63,21 +69,63 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
     if (attachmentInputRef.current) attachmentInputRef.current.value = '';
   };
 
-  const handleImageSelect = (file: File) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Please select a valid image file (JPG, PNG, GIF, WebP)');
-      return;
-    }
-    if (file.size > 4 * 1024 * 1024) {
-      alert('Image size must be less than 4MB');
+  const handleImageSelect = async (file: File) => {
+    // Check daily limit first
+    if (isImageLimitReached) {
+      toast({
+        title: "Daily Limit Reached",
+        description: `You can only upload ${dailyImageLimit} images per day. Please try again tomorrow.`,
+        variant: "destructive",
+      });
       return;
     }
 
-    setSelectedImage(file);
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please select a valid image file (JPG, PNG, GIF, WebP)",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: "Image size must be less than 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Compress the image
+    setIsCompressing(true);
+    try {
+      const compressedFile = await compressImage(file, 1200, 1200, 0.7);
+      setSelectedImage(compressedFile);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(compressedFile);
+      
+      // Increment image count
+      incrementImageCount();
+      
+      toast({
+        title: "Image Compressed",
+        description: `Reduced from ${(file.size / 1024).toFixed(0)}KB to ${(compressedFile.size / 1024).toFixed(0)}KB`,
+      });
+    } catch (error) {
+      console.error('Compression failed:', error);
+      // Use original if compression fails
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => setImagePreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+      incrementImageCount();
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const handleImageRemove = () => {
@@ -253,7 +301,45 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
       {/* Image Mode */}
       {mode === 'image' && (
         <div className="space-y-4">
-          {!selectedImage ? (
+          {/* Daily limit indicator */}
+          <div className={cn(
+            "flex items-center justify-between p-3 rounded-lg border",
+            isImageLimitReached 
+              ? "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800" 
+              : "bg-accent/50 border-border"
+          )}>
+            <div className="flex items-center gap-2">
+              <Image className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Daily Image Uploads</span>
+            </div>
+            <div className={cn(
+              "text-sm font-bold px-2 py-0.5 rounded",
+              isImageLimitReached 
+                ? "bg-red-500 text-white" 
+                : "bg-primary/10 text-primary"
+            )}>
+              {remainingImages}/{dailyImageLimit} remaining
+            </div>
+          </div>
+
+          {isImageLimitReached ? (
+            <div className="border-2 border-dashed border-red-300 rounded-xl p-6 sm:p-8 text-center bg-red-50/50 dark:bg-red-950/10">
+              <AlertCircle className="h-12 w-12 mx-auto mb-4 text-red-500" />
+              <p className="text-lg font-semibold text-red-600 dark:text-red-400">Daily Limit Reached</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                You've used all {dailyImageLimit} image uploads for today. Please try again tomorrow.
+              </p>
+            </div>
+          ) : isCompressing ? (
+            <div className="border-2 border-dashed border-primary/50 rounded-xl p-6 sm:p-8 text-center bg-primary/5">
+              <div className="w-12 h-12 mx-auto mb-4 relative">
+                <div className="w-12 h-12 rounded-full border-4 border-primary/20"></div>
+                <div className="absolute inset-0 w-12 h-12 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+              </div>
+              <p className="text-lg font-semibold">Compressing Image...</p>
+              <p className="text-sm text-muted-foreground mt-1">Optimizing for faster upload</p>
+            </div>
+          ) : !selectedImage ? (
             <div
               className={cn(
                 "border-2 border-dashed rounded-xl p-6 sm:p-8 text-center cursor-pointer transition-colors",
@@ -271,7 +357,7 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
               <div className="space-y-1 sm:space-y-2">
                 <p className="text-sm sm:text-lg font-semibold">Drop image or click to browse</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">
-                  JPG, PNG, GIF, WebP (Max 4MB)
+                  JPG, PNG, GIF, WebP (Max 10MB) • Auto-compressed
                 </p>
               </div>
               <input
@@ -301,9 +387,16 @@ export const QuestionInput: React.FC<QuestionInputProps> = ({ onSubmit, isLoadin
                 >
                   <X className="h-4 w-4" />
                 </Button>
+                {/* Compression badge */}
+                <div className="absolute bottom-2 left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Compressed
+                </div>
               </div>
               <p className="text-sm text-muted-foreground mt-2 text-center">
-                {selectedImage.name} ({(selectedImage.size / 1024 / 1024).toFixed(2)} MB)
+                {selectedImage.name} ({(selectedImage.size / 1024).toFixed(1)} KB)
               </p>
             </div>
           )}

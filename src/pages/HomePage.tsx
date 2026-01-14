@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRequestLimit } from '@/hooks/useRequestLimit';
 import { RequestLimitBanner } from '@/components/RequestLimitBanner';
 import { OfflinePage } from '@/pages/OfflinePage';
+import { OfflineModal } from '@/components/OfflineModal';
 // Smart Web Search API (same as vanilla app)
 const SEARCH_API = atob('aHR0cHM6Ly9iaXR0ZXItY2hlcnJ5LWZlM2Euc2FydGhha3BhbmRleTU1MzU1LndvcmtlcnMuZGV2Lw==');
 
@@ -67,6 +68,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   const [isSearchingWeb, setIsSearchingWeb] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [showOfflineModal, setShowOfflineModal] = useState(!navigator.onLine);
   const { toast } = useToast();
   const { isLimitReached, remainingRequests, incrementRequest } = useRequestLimit();
 
@@ -74,6 +76,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
   React.useEffect(() => {
     const handleOnline = () => {
       setIsOffline(false);
+      setShowOfflineModal(false);
       toast({
         title: "🌐 Back Online!",
         description: "Your internet connection has been restored.",
@@ -82,11 +85,7 @@ export const HomePage: React.FC<HomePageProps> = ({ user, onShowAuth }) => {
     
     const handleOffline = () => {
       setIsOffline(true);
-      toast({
-        title: "📡 No Internet",
-        description: "Please check your internet connection.",
-        variant: "destructive",
-      });
+      setShowOfflineModal(true);
     };
 
     window.addEventListener('online', handleOnline);
@@ -361,6 +360,12 @@ Subject: ${activeSubject}`;
 
   return (
     <div className="w-full space-y-4 sm:space-y-6 lg:space-y-8">
+      {/* Offline Modal Popup - Shows on app open without internet */}
+      <OfflineModal 
+        isOpen={showOfflineModal && isOffline} 
+        onRetry={() => window.location.reload()} 
+      />
+
       {/* Full Offline Page */}
       {isOffline && (
         <OfflinePage onRetry={() => window.location.reload()} />
